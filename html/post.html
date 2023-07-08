@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="titleArea">
+        <h1 id = "postTitle"></h1>
+    </div>
+    <div id = "postDate"> </div>
+    <div id = "postWriterName"></div>
+
+    <div id="detailArea">
+        <div id = "postDetail"></div>
+    </div>
+
+    <div id = "editPost">
+        <input type="button" value="글수정" id = "fixBtn"onclick="fixPostInitEvent()">
+        <input type="button" value="글삭제" onclick="deletePostEvent()">
+    </div>
+
+    <br></br>
+    <div id = "commentList"></div>
+    <input type="button" value="이전코멘트" onclick="loadBeforeCommentPage()">
+    <input type="button" value="다음코멘트" onclick="loadAfterCommentPage()">
+    <span id ="showPageNum"></span>
+    
+    <script src="../js/post.js"></script>
+</body>
+</html>
