@@ -1,5 +1,5 @@
 const router = require("express").Router()
-const connection = require('../database.js');
+//const connection = require('../database.js');
 const regex = require('./regex.js');
 
 // 로그인
@@ -10,30 +10,26 @@ router.post("/log-in",(req,res)=>{
         "message" : "",
         "userNum" : null
     }
-    if(!regex.idRegex.test(id)){
+    if(!regex.idRegex.test(id) && id.length != 0){
         result.message = "id 정규표현식 오류"
         res.send(result)
-    }else if(!regex.pwRegex.test(pw)){
+    }else if(!regex.pwRegex.test(pw) && pw.length != 0){
         result.message = "pw 정규표현식 오류"
         res.send(result)
     }else{
-        connection.query(`SELECT * FROM user WHERE id = '${id}' AND pw = '${pw}'`,function(error,data) {
+        const sql = `SELECT * FROM user WHERE id = ? AND pw = ?`
+        const sqlValue = [id,pw]
+        connection.query(sql,sqlValue,function(error,data) {
             if(error){
                 result.message = error
                 res.send(result)
             }
             else{
-                if(data.length >=1){
-                    if(data.length == 1){
-                        result.success = true
-                        result.message = "로그인 성공"
-                        result.userNum = data[0].usernum
-                        res.send(result)
-                    }
-                    else{
-                        result.message = "아이디 오류. 관리자께 문의하세요"
-                        res.send(result)
-                    }
+                if(data.length != 0){
+                    result.success = true
+                    result.message = "로그인 성공"
+                    result.userNum = data[0].usernum
+                    res.send(result)
                 }
                 else{
                     result.message = "존재하지 않는 아이디거나, 일치하지 않는 비밀번호입니다."
@@ -51,7 +47,9 @@ router.get("/id-exist/:id",(req,res)=>{ //아이디 중복체크
         result.message = "id 정규표현식 오류"
         res.send(result)
     } else{
-        connection.query(`SELECT * FROM user WHERE id = '${id}'`,function(error,data){
+        const sql = `SELECT * FROM user WHERE id = ?`
+        const sqlValue = [id]
+        connection.query(sql,sqlValue,function(error,data){
             const result = {
                 "success" : false,
                 "message" : ""
@@ -104,7 +102,9 @@ router.post("/",(req,res)=>{
         res.send(result)
     }
     else{
-        connection.query(`SELECT * FROM user WHERE id = '${id}'OR mail = '${mail}' OR contact = '${contact}'`,function(error,data){ 
+        const sql1 = `SELECT * FROM user WHERE id = ? OR mail = ? OR contact = ?`
+        const sqlValue1 =[id,mail,contact]
+        connection.query(sql1,sqlValue1,function(error,data){ 
             //혹시 모르니 한 번 더 예외처리 해서 수행해줍니다.
             if(error){
                 result.message = error
@@ -116,9 +116,10 @@ router.post("/",(req,res)=>{
                     res.send(result)
                 }
                 else{
-                    connection.query(`INSERT INTO user(id,pw,name,mail,birth,contact) 
-                    VALUES('${id}','${pw1}','${name}','${mail}','${birth}','${contact}');`
-                    ,function(error,data){
+                    const sql2 = `INSERT INTO user(id,pw,name,mail,birth,contact) 
+                    VALUES(?,?,?,?,?,?);`
+                    const sqlValue2 = [id,pw1,name,mail,birth,contact]
+                    connection.query(sql2,sqlValue2,function(error,data){
                         if(error){
                             result.message = error
                             res.send(result)
@@ -151,7 +152,9 @@ router.get("/find-id/:name/:mail",(req,res)=>{
         result.message = "메일 정규표현식 오류"
         res.send(result)
     } else{
-        connection.query(`SELECT * FROM user WHERE name = '${name}' AND mail = '${mail}';`,function(error,data){
+        const sql = `SELECT * FROM user WHERE name = ? AND mail = ?;`
+        const sqlValue = [name,mail]
+        connection.query(sql,sqlValue,function(error,data){
             if(error){
                 result.message = error
                 res.send(result)
@@ -195,8 +198,9 @@ router.get("/certification/:id/:name/:mail",(req,res)=>{
         result.message = "메일 정규표현식 오류"
         res.send(result)
     } else{
-        connection.query(`SELECT * FROM user WHERE id = '${id}' 
-        AND name = '${name}' AND mail = '${mail}';`,function(error,data1){
+        const sql = `SELECT * FROM user WHERE id = ? AND name = ? AND mail = ?;`
+        const sqlValue = [id,name,mail]
+        connection.query(sql,sqlValue,function(error,data1){
             if(error){
                 result.message = error
                 res.send(result)
@@ -228,7 +232,9 @@ router.put("/modify-Pw",(req,res)=>{
         result.message = "pw 정규표현식 오류"
         res.send(result)
     } else if(newpw1 == newpw2){
-        connection.query(`UPDATE user SET pw = '${newpw1}' WHERE usernum = '${usernum}';`,function(error){
+        const sql = `UPDATE user SET pw = ? WHERE usernum = ?;`
+        const sqlValue = [newpw1,usernum]
+        connection.query(sql,sqlValue,function(error){
             if(error){
                 result.message = error
                 res.send(result)
@@ -299,7 +305,9 @@ router.get("/:usernum",(req,res)=>{
         "birth": "",
         "contact": ""
     }
-    connection.query(`SELECT * FROM user WHERE usernum = ${usernum};`,function(error,data){
+    const sql = `SELECT * FROM user WHERE usernum = ?;`
+    const sqlValue = [usernum]
+    connection.query(sql,sqlValue,function(error,data){
         if(error){
             result.message = error
             res.send(result)
@@ -338,13 +346,8 @@ router.put("/",(req,res)=>{
         result.message = "전화번호 정규표현식 오류 (숫자만 11자리 적어주세요)"
         res.send(result)
     } else{
-        const email = mail;
-        const atIndex = email.indexOf('@');
-
-        const mailname = email.slice(0, atIndex);
-        const domain = email.slice(atIndex);
-        const sql = `SELECT * FROM user WHERE contact = ? OR mail = ?;`
-        const sqlValue = [contact,mail]
+        const sql1 = `SELECT * FROM user WHERE contact = ? OR mail = ?;`
+        const sqlValue1 = [contact,mail]
         connection.query(sql,sqlValue,function(error,data){
             if(error){
                 result.message = error
@@ -356,7 +359,9 @@ router.put("/",(req,res)=>{
                     console.log("통과")
                     res.send(result)
                 } else{
-                    connection.query(`UPDATE user SET mail = '${mail}', birth = '${birth}', contact = '${contact}' WHERE usernum = ${usernum};`,function(error,data){
+                    const sql2 = `UPDATE user SET mail = ?, birth = ?, contact = ? WHERE usernum = ?;`
+                    const sqlValue2 = [mail,birth,contact,usernum]
+                    connection.query(sql2,sqlValue2,function(error,data){
                         if(error){
                             result.message = error
                             res.send(result)

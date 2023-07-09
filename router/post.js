@@ -13,10 +13,12 @@ router.get("/list/:pagenum/:postcount",(req,res)=>{
         "postList" : [],
         "pageNum" : null
     }
-    connection.query(`SELECT name,postnum,title,date FROM post 
+    const sql = `SELECT name,postnum,title,date FROM post 
     JOIN user ON post.usernum = user.usernum
-    ORDER BY postnum DESC LIMIT ${postcount} 
-    OFFSET ${(pagenum-1)*postcount};`,function(error,data){
+    ORDER BY postnum DESC LIMIT ? 
+    OFFSET ?;`
+    const sqlValue = [postcount,(pagenum-1)*postcount]
+    connection.query(sql,sqlValue,function(error,data){
         if(error){
             result.message = error
             res.send(result)
@@ -65,7 +67,9 @@ router.get("/certification/:postnum/:usernum",(req,res)=>{
         "message" : "",
         "user":null
     }
-    connection.query(`SELECT COUNT(*) AS count FROM post WHERE postnum=${postnum} AND usernum=${usernum};`,function(error,data){
+    const sql = `SELECT COUNT(*) AS count FROM post WHERE postnum= ? AND usernum= ?`
+    const sqlValue = [postnum,usernum]
+    connection.query(sql,sqlValue,function(error,data){
         if(error){
             result.message = error
             res.send(result)
@@ -94,9 +98,11 @@ router.get("/:postnum",(req,res)=>{
         "date" : "",
         "name" : ""
     }
-    connection.query(`SELECT name,postnum,title,date,detail,user.usernum FROM post 
+    const sql = `SELECT name,postnum,title,date,detail,user.usernum FROM post 
     JOIN user ON post.usernum = user.usernum 
-    WHERE postnum = ${postnum};`,function(error,data1){
+    WHERE postnum = ?;`
+    const sqlValue = [postnum]
+    connection.query(sql,sqlValue,function(error,data1){
         if(error){
             result.message = error
             res.send(result)
@@ -194,7 +200,9 @@ router.delete("/",(req,res)=>{
         "success" : false,
         "message" : ""
     }
-    connection.query(`DELETE FROM post WHERE postnum = ${postnum};`,function(error){
+    const sql = `DELETE FROM post WHERE postnum = ?;`
+    const sqlValue = [postnum]
+    connection.query(sql,sqlValue,function(error){
         if(error){
             result.message = error
             res.send(result)

@@ -12,7 +12,9 @@ router.get("/count/:commentperpage/:postnum",(req,res)=>{
         "message" : "",
         "pagecount":null
     }
-    connection.query(`SELECT COUNT(*) AS count FROM comment WHERE postnum = ${postnum};`,function(error,data){
+    const sql = `SELECT COUNT(*) AS count FROM comment WHERE postnum = ?;`
+    const sqlValue = [postnum]
+    connection.query(sql,sqlValue,function(error,data){
         if(error){
             result.message = error
             res.send(result)
@@ -33,11 +35,14 @@ router.get("/:postnum/:commentpagenum/:commentperpage",(req,res)=>{
         "message" : "",
         "commentList": []
     }
-    connection.query(`SELECT detail,date,name,commentnum,user.usernum FROM comment 
+    const sql = `SELECT detail,date,name,commentnum,user.usernum FROM comment 
     JOIN user ON comment.usernum = user.usernum
-    WHERE postnum = ${postnum} 
-    ORDER BY commentnum ASC LIMIT ${commentperpage}
-    OFFSET ${(commentpagenum-1)*commentperpage};`,function(error,data){
+    WHERE postnum = ?
+    ORDER BY commentnum ASC LIMIT ?
+    OFFSET ?;`
+    const sqlValue = [postnum, commentperpage, (commentpagenum-1)*commentperpage]
+    
+    connection.query(sql,sqlValue,function(error,data){
         if(error){
             result.message = error
             res.send(result)
@@ -69,7 +74,9 @@ router.post("/",(req,res)=>{
         result.message = "내용 정규표현식 오류"
         res.send(result)
     } else{
-        connection.query(`INSERT INTO comment(detail,usernum,postnum) VALUES('${detail}','${usernum}',${postnum});`,function(error){
+        const sql = `INSERT INTO comment(detail,usernum,postnum) VALUES(?,?,?);`
+        const sqlValue = [detail,usernum,postnum]
+        connection.query(sql,sqlValue,function(error){
             if(error){
                 result.message = error
                 res.send(result)
@@ -94,7 +101,9 @@ router.put("/",(req,res)=>{
         result.message = "내용 정규표현식 오류"
         res.send(result)
     } else{
-        connection.query(`UPDATE comment SET detail = '${detail}' WHERE commentnum = ${commentnum} AND usernum = ${usernum};`,function(error){
+        const sql = `UPDATE comment SET detail = ? WHERE commentnum = ? AND usernum = ?;`
+        const sqlValue = [detail,commentnum,usernum]
+        connection.query(sql,sqlValue,function(error){
             //존재하지 않는 것에 대한 예외처리와, 본인 글인지에 대한 확인
             if(error){
                 result.message = error
@@ -115,7 +124,9 @@ router.delete("/",(req,res)=>{
         "success" : false,
         "message" : ""
     }
-    connection.query(`DELETE FROM comment WHERE commentnum = ${commentnum} AND usernum = ${usernum};`,function(error){
+    const sql = `DELETE FROM comment WHERE commentnum = ? AND usernum = ?;`
+    const sqlValue = [commentnum,usernum]
+    connection.query(sql,sqlValue,function(error){
         if(error){
             result.message = error
             res.send(result)
