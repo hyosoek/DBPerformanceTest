@@ -1,6 +1,7 @@
 //왜 로컬 저장소를 쓰면 안될까?
 //const receivedData = location.href.split('?')[1];
 const postnum = localStorage.getItem("postNumTemp")
+const commentnumList = []
 
 console.log(postnum)
 let commentPageNum = 1
@@ -37,6 +38,7 @@ const loadComment = async() => {
         postItem.style.display = "block";
         postItem.style.backgroundColor = 'white';
         document.getElementById("commentList").appendChild(postItem);
+        commentnumList[i] = result.commentList[i].commentnum
     }
     document.getElementById("showPageNum").innerText = (commentPageNum +"/"+commentPageMaxCount+"페이지")
 
@@ -103,6 +105,7 @@ const fixPostEvent = async() =>{
             "Content-Type":"application/json"
         },
         "body":JSON.stringify({
+            "usernum" : sessionStorage.getItem("usernum"),
             "title" : document.getElementById("fixedTitle").value,
             "detail": document.getElementById("fixedDetail").value,
             "postnum": postnum
@@ -118,7 +121,7 @@ const fixPostEvent = async() =>{
             window.location.href = '/postPage'
         }
         else{
-            alert("삭제 실패")
+            alert("수정 실패")
         }
     })
 }
@@ -137,6 +140,7 @@ const deletePostEvent = async() =>{
                     "Content-Type":"application/json"
                 },
                 "body":JSON.stringify({
+                    "usernum" : sessionStorage.getItem("usernum"),
                     "postnum" : postnum
                 })
             }) 
@@ -156,6 +160,48 @@ const deletePostEvent = async() =>{
         }
     }else{
         alert("권한이 없습니다.")
+    }
+}
+
+const writeCommentEvent = async() =>{
+    const response = await fetch("/comment",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
+        "method" : "POST",
+        "headers":{
+            "Content-Type":"application/json"
+        },
+        "body":JSON.stringify({
+            "detail": document.getElementById("detail").value,
+            "usernum": sessionStorage.getItem("usernum"),
+            "postnum": postnum
+        })
+    }) 
+    const result = await response.json();
+    if(result.success == true){
+        alert("작성완료")
+        window.location.href = '/postPage'
+    }
+    else{
+        alert(result.message)
+    }
+}
+const deleteCommentEvent = async() =>{
+    const response = await fetch("/comment",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
+        "method" : "DELETE",
+        "headers":{
+            "Content-Type":"application/json"
+        },
+        "body":JSON.stringify({
+            "commentnum" : commentnumList[0],
+            "usernum": sessionStorage.getItem("usernum")
+        })
+    }) 
+    const result = await response.json();
+    if(result.success == true){
+        alert("삭제완료")
+        window.location.href = '/postPage'
+    }
+    else{
+        alert(result.message)
     }
 }
 

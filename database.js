@@ -1,19 +1,20 @@
-const mariadb = require('mysql')
-const {Client} = require("pg")
+// const mariadb = require('mysql')
 
-const connection = mariadb.createConnection({
-    host:'localhost',
-    user:'hyoseok',
-    password : '123123z',
-    database : 'healthpartner'
-})
+// const connection = mariadb.createConnection({
+//     host:'localhost',
+//     user:'hyoseok',
+//     password : '123123z',
+//     database : 'healthpartner'
+// })
 
-export const config = new Client({
-    "user":"ubuntu",
-    "password":"1234",
-    "host":"localhost",
-    "post":"5432",
-    "database": "healthpartner" 
-})
+const pgConnect ={
+        user : 'ubuntu',
+        host : 'localhost',
+        database : 'healthpartner',
+        password : '1234',
+        port : 5432
+    }
 
-module.exports = connection;
+
+// module.exports = {connection,pgConnect};
+module.exports = {pgConnect};

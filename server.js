@@ -1,18 +1,20 @@
 const express =require("express")
+var session = require('express-session');
 const app = express()
 app.use(express.json())
-
 
 const path = require("path")
 const https = require("https")//통신 패키지
 const fs = require("fs")// 파일 가져올 때 사용하는 패키지
-var session = require('express-session');
+
+
  
 app.use(session({
   secret: 'secret',
   saveUninitialized: true,
   cookie: { maxAge : 600000 },
-  rolling : true
+  rolling : true,
+  resave: true
 }));
 
 
@@ -31,6 +33,8 @@ app.get("*",(req,res,next) =>{//next는 자동으로 넘어가줌
     }
 
 })
+
+
 
 //API
 const accountApi = require("./router/account")

@@ -7,6 +7,7 @@ const initEvent = () =>{
 }
 
 const idCheck = async() =>{
+    console.log("hello, world")
     const id = document.getElementById("idInput").value
     const response = await fetch(`/account/id-exist/${id}`);
     const result = await response.json();

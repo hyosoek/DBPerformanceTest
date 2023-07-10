@@ -40,7 +40,7 @@ const changePwEvent = (usernum)=>{
 
 const changePw = (usernum) =>{
     return async function(event) {
-        const response = await fetch("/account/modify-Pw",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
+        const response = await fetch("/account/modify-pw",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
             "method" : "PUT",
             "headers":{
                 "Content-Type":"application/json"

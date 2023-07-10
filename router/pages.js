@@ -31,5 +31,10 @@ router.get("/postPage",(req,res)=>{
     res.sendFile(path.join(__dirname, `../html/post.html`)) //..을 계산해줌
 })
 
+router.get("/writePostPage",(req,res)=>{
+    //const {usernum} = req.params
+    res.sendFile(path.join(__dirname, `../html/writePost.html`)) //..을 계산해줌
+})
+
 
 module.exports = router
