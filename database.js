@@ -1,5 +1,5 @@
+//mariaDB
 // const mariadb = require('mysql')
-
 // const connection = mariadb.createConnection({
 //     host:'localhost',
 //     user:'hyoseok',
@@ -7,13 +7,16 @@
 //     database : 'healthpartner'
 // })
 
+//postgreSQL
+require('dotenv').config();
+
 const pgConnect ={
-        user : 'ubuntu',
-        host : 'localhost',
-        database : 'healthpartner',
-        password : '1234',
-        port : 5432
-    }
+        user : process.env.dbUser,
+        host : process.env.dbHost,
+        database : process.env.dbDatabase,
+        password : process.env.dbPassword,
+        port : process.env.dbPort
+}
 
 
 // module.exports = {connection,pgConnect};

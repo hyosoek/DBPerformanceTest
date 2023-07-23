@@ -1,24 +1,26 @@
 const router = require("express").Router()
-const regex = require('./regex.js');
+const inputCheck = require("../module/inputCheck.js");
 
 const {Client} = require("pg")
 const db = require('../database.js');
 
+
 // 코멘트 페이지 개수 가져오기
-router.get("/count/:commentperpage/:postnum",async(req,res)=>{
-    const {commentperpage,postnum} = req.params
+router.get("/count",async(req,res)=>{
+    const {postnum} = req.query
     const result = {
         "success" : false,
         "message" : "",
         "pagecount":null
     }
-    if(commentperpage.length == 0 || postnum.length == 0){
-        result.message == "매개변수 전달 오류"
-        res.send(result)
-    }
-    else{
-        var client = new Client(db.pgConnect)
-        try{
+    let client = null
+    try{
+        const numCheck = new inputCheck(postnum)
+
+        if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
+        else{
+            const commentperpage = process.env.commentPerPage // 환경변수
+            client = new Client(db.pgConnect)
             client.connect()
             const sql = `SELECT COUNT(*) AS count FROM comment WHERE postnum = $1;`
             const values = [postnum]
@@ -33,30 +35,32 @@ router.get("/count/:commentperpage/:postnum",async(req,res)=>{
             else{
                 result.message == "댓글이 존재하지 않습니다."
             }
-        }catch(err){
-            console.log("/comment/count",err.message)
-            result.message = err.message
         }
-        client.end()
+    }catch(err){
+        console.log("GET /comment/count",err.message)
+        result.message = err.message
+    }finally{
+        if(client)client.end()
         res.send(result)
     }
-    
 })
 // 코멘트 페이지 단위로 가져오기
-router.get("/:postnum/:commentpagenum/:commentperpage",async(req,res)=>{
-    const {postnum,commentpagenum,commentperpage} = req.params; // 받아옴
+router.get("/",async(req,res)=>{
+    const {postnum,commentpagenum} = req.query; // 받아옴
     const result = {
         "success" : false,
         "message" : "",
         "commentList": []
     }
-    if(postnum.length == 0 || commentpagenum.length == 0 || commentperpage.length == 0){
-        result.message ="매개변수 오류입니다."
-        res.send(result)
-    }
-    else{
-        var client = new Client(db.pgConnect)
-        try{
+    let client = null
+    try{
+        const numCheck1 = new inputCheck(postnum)
+        const numCheck2 = new inputCheck(commentpagenum)
+        if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
+        else if (numCheck2.isEmpty().result != true) result.message = numCheck2.errMessage
+        else{
+            const commentperpage = process.env.commentPerPage // 환경변수
+            client = new Client(db.pgConnect)
             client.connect()
             const sql = `SELECT detail,date,name,commentnum,account.usernum FROM comment 
             JOIN account ON comment.usernum = account.usernum
@@ -65,7 +69,7 @@ router.get("/:postnum/:commentpagenum/:commentperpage",async(req,res)=>{
             OFFSET $3;`
             const values = [postnum, commentperpage, (commentpagenum-1)*commentperpage]
             const data = await client.query(sql,values)
-
+    
             const row = data.rows
             if(row.length != 0){
                 result.success = true
@@ -76,32 +80,35 @@ router.get("/:postnum/:commentpagenum/:commentperpage",async(req,res)=>{
             else{
                 result.message == "댓글이 존재하지 않습니다."
             }
-        }catch(err){
-            console.log("/comment",err.message)
-            result.message = err.message
         }
-        client.end()
+    }catch(err){
+        console.log("GET /comment",err.message)
+        result.message = err.message
+    }finally{
+        if(client)client.end()
         res.send(result)
-
     }
+    
 })
 // commentWrite
 router.post("/",async(req,res)=>{
     const {detail,usernum,postnum} = req.body;
-    //auto date
     const result = {
         "success" : false,
         "message" : "",
     }
-    if(!regex.commentDetailRegex.test(detail)){
-        result.message = "내용 정규표현식 오류"
-        res.send(result)
-    } else if(usernum.length == 0 || postnum.length == 0){
-        result.message = "매개변수 전달 오류"
-        res.send(result)
-    } else{
-        var client = new Client(db.pgConnect)
-        try{
+    
+    let client = null
+    try{
+        const detailCheck = new inputCheck(detail)
+        const numCheck1 = new inputCheck(usernum)
+        const numCheck2 = new inputCheck(postnum)
+
+        if (detailCheck.isMinSize(2).isMaxSize(1023).isEmpty().result != true) result.message = detailCheck.errMessage
+        else if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
+        else if (numCheck2.isEmpty().result != true) result.message = numCheck2.errMessage
+        else{
+            client = new Client(db.pgConnect)
             client.connect()
             const sql = `INSERT INTO comment(detail,usernum,postnum) VALUES($1,$2,$3);`
             const value = [detail,usernum,postnum]
@@ -109,13 +116,14 @@ router.post("/",async(req,res)=>{
             
             result.success = true
             result.message = "작성 완료"
-        }catch(err){
-            console.log("/comment",err.message)
-            result.message = err.message
         }
-        client.end()
+    }catch(err){
+        console.log("POST /comment",err.message)
+        result.message = err.message
+    }finally{
+        if(client)client.end()
         res.send(result)
-    }   
+    }
 })
 // commentFix
 router.put("/",async(req,res)=>{
@@ -125,15 +133,17 @@ router.put("/",async(req,res)=>{
         "success" : false,
         "message" : "",
     }
-    if(!regex.commentDetailRegex.test(detail)){
-        result.message = "내용 정규표현식 오류"
-        res.send(result)
-    }else if(commentnum.length == 0 || usernum.length == 0){
-        result.message = "매개변수 전달 오류"
-        res.send(result)
-    }else{
-        var client = new Client(db.pgConnect)
-        try{
+    let client = null
+    try{
+        const detailCheck = new inputCheck(detail)
+        const numCheck1 = new inputCheck(commentnum)
+        const numCheck2 = new inputCheck(usernum)
+
+        if (detailCheck.isMinSize(2).isMaxSize(1023).isEmpty().result != true) result.message = detailCheck.errMessage
+        else if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
+        else if (numCheck2.isEmpty().result != true) result.message = numCheck2.errMessage
+        else{
+            client = new Client(db.pgConnect)
             client.connect()
             const sql = `UPDATE comment SET detail = $1 WHERE commentnum = $2 AND usernum = $3;`
             const value = [detail,commentnum,usernum]
@@ -141,13 +151,15 @@ router.put("/",async(req,res)=>{
             
             result.success = true
             result.message = "수정 완료"
-        }catch(err){
-            console.log("/comment",err.message)
-            result.message = err.message
         }
-        client.end()
+    }catch(err){
+        console.log("PUT /comment",err.message)
+        result.message = err.message
+    }finally{
+        if(client)client.end()
         res.send(result)
     }
+    
 })
 // commentDelete
 router.delete("/",async(req,res)=>{
@@ -156,12 +168,15 @@ router.delete("/",async(req,res)=>{
         "success" : false,
         "message" : ""
     }
-    if(commentnum.length == 0 || usernum.length == 0){
-        result.message = "매개변수 전달 오류"
-        res.send(result)
-    } else{
-        var client = new Client(db.pgConnect)
-        try{
+    var client = null
+    try{
+        const numCheck1 = new inputCheck(commentnum)
+        const numCheck2 = new inputCheck(usernum)
+        
+        if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
+        else if (numCheck2.isEmpty().result != true) result.message = numCheck2.errMessage
+        else{
+            client = new Client(db.pgConnect)
             client.connect()
             const sql = `DELETE FROM comment WHERE commentnum = $1 AND usernum = $2;`
             const value = [commentnum,usernum]
@@ -170,11 +185,12 @@ router.delete("/",async(req,res)=>{
             console.log(row)
             result.success = true
             result.message = "삭제 완료"
-        }catch(err){
-            console.log("/comment",err.message)
-            result.message = err.message
         }
-        client.end()
+    }catch(err){
+        console.log("DELETE /comment",err.message)
+        result.message = err.message
+    }finally{
+        if(client)client.end()
         res.send(result)
     }
 })

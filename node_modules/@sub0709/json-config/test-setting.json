@@ -1,0 +1,14 @@
+{
+  "dbInfo": {
+    "db": {
+      "host": "local.app.com",
+      "port": 0,
+      "dbName": 999,
+      "abc": false
+    },
+    "option": {
+      "order": "asc",
+      "count": 1
+    }
+  }
+}

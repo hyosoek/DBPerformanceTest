@@ -1,6 +1,6 @@
 
 const initProfileData = async() =>{
-    const response = await fetch(`/account/${sessionStorage.getItem("usernum")}`);
+    const response = await fetch(`/profile?usernum=${sessionStorage.getItem("usernum")}`);
     const result = await response.json();
     console.log(result)
 
@@ -31,7 +31,7 @@ const profileFixInitEvent = () =>{
 }
 
 const profileFixEvent = () =>{
-    fetch("/account",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
+    fetch("/profile",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "PUT",
         "headers":{
             "Content-Type":"application/json"

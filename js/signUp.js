@@ -7,11 +7,11 @@ const initEvent = () =>{
 }
 
 const idCheck = async() =>{
-    console.log("hello, world")
     const id = document.getElementById("idInput").value
-    const response = await fetch(`/account/id-exist/${id}`);
+    const response = await fetch(`/account/id-exist?id=${id}`);
+    
     const result = await response.json();
-    if(result.success ==true){
+    if(result.success == true){
         alert(result.message)
         document.getElementById("idInput").disabled = true
         signUpBtn.disabled = false

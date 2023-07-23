@@ -2,11 +2,10 @@
 //원래는 매개변수가 맞지만 귀찮음
 
 let pageNum = 1
-let postPerPage = 3
 let pageMaxCount = 0
 
 const loadPostPage = (pageNum) =>{
-    fetch(`/post/list/${pageNum}/${postPerPage}`)
+    fetch(`/post/list?pagenum=${pageNum}`)
     .then((response) => {
         return response.json()
     })
@@ -44,7 +43,7 @@ const loadAfterPostPage = () =>{
 }
 
 const loadPageMaxCount = (pageNum) =>{
-    fetch(`/post/count/${postPerPage}`)
+    fetch(`/post/count`)
     .then((response) => {
         return response.json()
     })

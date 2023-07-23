@@ -5,7 +5,7 @@ const initBtnEvent = () =>{
 const findID = async() =>{
     const nameInput = document.getElementById("nameInput").value
     const mailInput = document.getElementById("mailInput").value
-    const response = await fetch(`/account/find-id/${nameInput}/${mailInput}`);
+    const response = await fetch(`/account/find-id?name=${nameInput}&mail=${mailInput}`);
     const result = await response.json();
     console.log(result)
 

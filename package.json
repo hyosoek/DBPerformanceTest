@@ -1,10 +1,15 @@
 {
   "dependencies": {
+    "@sub0709/json-config": "^1.1.1",
+    "axios": "^1.4.0",
     "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "mariadb": "^3.2.0",
+    "mongodb": "^5.7.0",
     "mysql": "^2.18.1",
+    "node-fetch": "^3.3.1",
     "pg": "^8.11.1"
   }
 }

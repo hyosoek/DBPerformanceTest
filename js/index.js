@@ -10,6 +10,7 @@ const getEvent = () =>{
 const loginEvent = () =>{
     fetch("/account/log-in",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "POST",
+        "mode": 'cors',
         "headers":{
             "Content-Type":"application/json"
         },
@@ -22,7 +23,6 @@ const loginEvent = () =>{
         return response.json()
     })
     .then((result) => {
-        console.log(result)
         if(result.success){
             sessionStorage.setItem('usernum', result.userNum);
             window.location.href = '/mainPage';

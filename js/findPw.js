@@ -6,7 +6,7 @@ const findID = async() =>{
     const idInput = document.getElementById("idInput").value
     const nameInput = document.getElementById("nameInput").value
     const mailInput = document.getElementById("mailInput").value
-    const response = await fetch(`/account/certification/${idInput}/${nameInput}/${mailInput}`);
+    const response = await fetch(`/account/certification?id=${idInput}&name=${nameInput}&mail=${mailInput}`);
     const result = await response.json();
     console.log(result)
 

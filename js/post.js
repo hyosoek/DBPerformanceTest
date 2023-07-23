@@ -5,14 +5,13 @@ const commentnumList = []
 
 console.log(postnum)
 let commentPageNum = 1
-let commentPerPage = 3
 let commentPageMaxCount = 0
 //전역변수는 프론트엔드가 알아서 해줄 것임.
 
 //promise 쓰지 말아보자
 
 const loadPost = async() => {
-    const response = await fetch(`/post/${postnum}`);
+    const response = await fetch(`/post?postnum=${postnum}`);
     const result = await response.json();
 
     document.getElementById("postTitle").innerText = result.title
@@ -25,7 +24,7 @@ const loadPost = async() => {
 
 const loadComment = async() => {
     document.getElementById("commentList").innerHTML = null
-    const response = await fetch(`/comment/${postnum}/${commentPageNum}/${commentPerPage}`);
+    const response = await fetch(`/comment?postnum=${postnum}&commentpagenum=${commentPageNum}`);
     const result = await response.json();
 
     for(let i = 0; i < result.commentList.length;i++){
@@ -58,7 +57,7 @@ const loadAfterCommentPage = () =>{
 }
 
 const loadCommentMaxCount = () =>{
-    fetch(`/comment/count/${commentPerPage}/${postnum}`)
+    fetch(`/comment/count?postnum=${postnum}`)
     .then((response) => {
         return response.json()
     })
@@ -69,11 +68,7 @@ const loadCommentMaxCount = () =>{
 }
 
 const fixPostInitEvent = async() =>{
-    console.log(sessionStorage.getItem("usernum"))
-    const response = await fetch(`/post/certification/${postnum}/${sessionStorage.getItem("usernum")}`);
-    const result = await response.json();
-    console.log(result)
-    if(result.success == true){
+    
         const postTitle = document.getElementById('postTitle');
         const replaceTitle = document.createElement('textarea');
         replaceTitle.id = "fixedTitle";
@@ -93,9 +88,7 @@ const fixPostInitEvent = async() =>{
         fixBtn.value = "저장하기"
         fixBtn.onclick = null
         fixBtn.onclick = fixPostEvent
-    }else{
-        alert("권한이 없습니다.")
-    }
+    
 }   
 
 const fixPostEvent = async() =>{
@@ -121,45 +114,40 @@ const fixPostEvent = async() =>{
             window.location.href = '/postPage'
         }
         else{
-            alert("수정 실패")
+            alert("권한이 없습니다.")
         }
     })
 }
 
 
 const deletePostEvent = async() =>{
-    const response = await fetch(`/post/certification/${postnum}/${sessionStorage.getItem("usernum")}`);
-    const result = await response.json();
-    if(result.success){
-        if(!confirm("정말 삭제하시겠습니까?")){
-            alert("취소 되었습니다.")
-        }else{
-            fetch("/post",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
-                "method" : "DELETE",
-                "headers":{
-                    "Content-Type":"application/json"
-                },
-                "body":JSON.stringify({
-                    "usernum" : sessionStorage.getItem("usernum"),
-                    "postnum" : postnum
-                })
-            }) 
-            .then((response) => {
-                return response.json()
-            })
-            .then((result) => {
-                console.log(result)
-                if(result.success == true){
-                    alert("삭제 완료")
-                    window.location.href = '/mainPage'
-                }
-                else{
-                    alert("삭제 실패")
-                }
-            })
-        }
+    
+    if(!confirm("정말 삭제하시겠습니까?")){
+        alert("취소 되었습니다.")
     }else{
-        alert("권한이 없습니다.")
+        fetch("/post",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
+            "method" : "DELETE",
+            "headers":{
+                "Content-Type":"application/json"
+            },
+            "body":JSON.stringify({
+                "usernum" : sessionStorage.getItem("usernum"),
+                "postnum" : postnum
+            })
+        }) 
+        .then((response) => {
+            return response.json()
+        })
+        .then((result) => {
+            console.log(result)
+            if(result.success == true){
+                alert("삭제 완료")
+                window.location.href = '/mainPage'
+            }
+            else{
+                alert("삭제 실패")
+            }
+        })
     }
 }
 
