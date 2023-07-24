@@ -5,14 +5,14 @@ const {Client} = require("pg")
 const db = require('../database.js');
 
 const logg = require("./log.js");
+const session = require("express-session");
 
 // 로그인
 router.post("/log-in",async(req,res)=>{
     const {id,pw} = req.body;
     const result = {
         "success" : false,
-        "message" : "",
-        "userNum" : null
+        "message" : ""
     }
     let client = null;
     try{
@@ -24,7 +24,7 @@ router.post("/log-in",async(req,res)=>{
         
         client = new Client(db.pgConnect)
         client.connect()
-        const sql = "SELECT name,usernum,isadmin FROM account WHERE id=$1 AND pw = $2;"
+        const sql = "SELECT id,usernum,isadmin FROM account WHERE id=$1 AND pw = $2;"
         const values = [id,pw]
         const data = await client.query(sql,values)
 
@@ -32,9 +32,10 @@ router.post("/log-in",async(req,res)=>{
         if(row.length != 0) {
             result.success  = true
             result.message = "로그인 성공"
-            result.userNum = row[0].usernum
 
-            
+            req.session.userNum = await row[0].usernum
+            req.session.userId = await row[0].id
+
             if(row[0].isadmin){
                 req.session.isAdmin = true
             }else{
@@ -42,7 +43,7 @@ router.post("/log-in",async(req,res)=>{
             }
             
             const tempJSON = {
-                "id" : result.userNum , //이후에는 req.session.usernum,
+                "id" : req.session.userId , //이후에는 req.session.usernum,
                 "ip" : req.ip,
                 "api" : req.originalUrl, //parsing이 필요할 듯
                 "rest" : "POST", //
@@ -62,6 +63,31 @@ router.post("/log-in",async(req,res)=>{
         res.send(result)
     }
        
+})
+//로그아웃
+router.get("/log-out",async(req,res)=>{
+    const result = {
+        "success" : false,
+        "message" : ""
+    }
+    try{
+        const tempJSON = {
+            "id" : req.session.userId , //이후에는 req.session.usernum,
+            "ip" : req.ip,
+            "api" : req.originalUrl, //parsing이 필요할 듯
+            "rest" : "GET", //
+            "request" : JSON.parse(JSON.stringify(req.body)), // 굳이 안해도 될 거 같은데...
+            "response" : result
+        }
+        logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
+        req.session.destroy(function(err){})
+        result.success = true
+    }catch(err){
+        console.log("POST /account/log-out", err.message)
+        result.message = err.message
+    } finally{
+        res.send(result)
+    }    
 })
 // 회원가입 - 아이디 중복체크
 router.get("/id-exist",async(req,res)=>{ //아이디 중복체크
@@ -90,6 +116,7 @@ router.get("/id-exist",async(req,res)=>{ //아이디 중복체크
             } else{
                 result.message = "이미 존재하는 id입니다."
             }
+            
         }
     }catch(err){
         console.log("GET /account/id-exist/",err.message)
@@ -189,8 +216,7 @@ router.get("/certification",async(req,res)=>{
     const {id,name,mail} = req.query; // 받아옴
     const result = {
         "success" : false,
-        "message" : "",
-        "usernum" : null
+        "message" : ""
     }
     let client = null
     try{
@@ -210,10 +236,13 @@ router.get("/certification",async(req,res)=>{
     
             const row = data.rows
             if(row.length != 0) {
-                result.usernum = row[0].usernum
+                req.session.userNum = await row[0].usernum
                 result.success  = true
                 result.message = "귀하의 아이디를 찾았습니다."
             } else{
+                if (req.session.userNum) { //세션정보가 존재하는 경우
+                    delete req.session.userNum
+                }
                 result.message = "존재하지 않는 정보입니다."
             }
         }
@@ -228,21 +257,19 @@ router.get("/certification",async(req,res)=>{
 })
 // 비번찾기 - 비번변경
 router.put("/modify-pw",async(req,res)=>{
-    const {usernum,newpw1,newpw2} = req.body; // 받아옴
+    const {newpw1,newpw2} = req.body; // 받아옴
     const result = {
         "success" : false,
         "message" : ""
     }
     let client = null
     try{
-        const numCheck = new inputCheck(usernum)
         const pwCheck = new inputCheck(newpw1)
-
         if(pwCheck.isMinSize(4).isMaxSize(31).isSameWith(newpw2).isEmpty().result != true) result.message = pwCheck.errMessage
-        else if(numCheck.isEmpty()) result.message = numCheck.errMessage
         else {
             client = new Client(db.pgConnect)
             client.connect()
+            const usernum = await req.session.userNum
             const sql = "UPDATE account SET pw = $1 WHERE usernum = $2;"
             const values = [newpw1,usernum]
             const data = await client.query(sql,values)
@@ -261,14 +288,13 @@ router.put("/modify-pw",async(req,res)=>{
 })
 // 계정삭제
 router.delete("/",async(req,res)=>{
-    const {usernum,pw} = req.body;
+    const {pw} = req.body;
     const result = {
         "success" : false,
         "message" : ""
     }
     let client = null
     try{
-        const numCheck = new inputCheck(usernum)
         const pwCheck = new inputCheck(pw)
 
         if(pwCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = pwCheck.errMessage
@@ -276,9 +302,11 @@ router.delete("/",async(req,res)=>{
         else {
             client = new Client(db.pgConnect)
             client.connect()
+            const usernum = await req.session.userNum
             const sql = "DELETE FROM account WHERE usernum = $1 AND pw = $2;"
             const values = [usernum,pw]
             const data = await client.query(sql,values)
+            req.session.destroy(function(err){})
 
             result.success  = true
             result.message = "계정 삭제 완료"

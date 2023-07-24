@@ -131,7 +131,7 @@ router.get("/",async(req,res)=>{
 
 // postWrite
 router.post("/",async(req,res)=>{
-    const {title,detail,usernum} = req.body;
+    const {title,detail} = req.body;
     //auto date
     const result = {
         "success" : false,
@@ -141,14 +141,13 @@ router.post("/",async(req,res)=>{
     try{
         const titleCheck = new inputCheck(title)
         const detailCheck = new inputCheck(detail)
-        const numCheck = new inputCheck(usernum)
 
         if (titleCheck.isMinSize(4).isMaxSize(63).isEmpty().result != true) result.message = titleCheck.errMessage
         else if (detailCheck.isMinSize(4).isMaxSize(2047).isEmpty().result != true) result.message = detailCheck.errMessage
-        else if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
         else{
             client = new Client(db.pgConnect)
             client.connect()
+            const usernum = await req.session.userNum
             const sql = `INSERT INTO post(title,detail,usernum) VALUES($1,$2,$3);`
             const value = [title, detail, usernum];
             const data = await client.query(sql,value)
@@ -168,7 +167,7 @@ router.post("/",async(req,res)=>{
 
 // postFix
 router.put("/",async(req,res)=>{
-    const {usernum,title,detail,postnum} = req.body; // 역시나 예외처리할 때 유저 고유 식별번호를 확인합니다.
+    const {title,detail,postnum} = req.body; // 역시나 예외처리할 때 유저 고유 식별번호를 확인합니다.
     const result = {
         "success" : false,
         "message" : "",
@@ -177,16 +176,15 @@ router.put("/",async(req,res)=>{
     try{
         const titleCheck = new inputCheck(title)
         const detailCheck = new inputCheck(detail)
-        const numCheck = new inputCheck(usernum)
         const numCheck2 = new inputCheck(postnum)
 
         if (titleCheck.isMinSize(4).isMaxSize(63).isEmpty().result != true) result.message = titleCheck.errMessage
         else if (detailCheck.isMinSize(4).isMaxSize(2047).isEmpty().result != true) result.message = detailCheck.errMessage
-        else if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
         else if (numCheck2.isEmpty().result != true) result.message = numCheck2.errMessage
         else{
             client = new Client(db.pgConnect)
             client.connect()
+            const usernum = await req.session.userNum
             const sql = `UPDATE post SET title = $1, detail = $2 WHERE postnum = $3 AND usernum = $4;`
             const value = [title, detail, postnum,usernum];
             const data = await client.query(sql,value)
@@ -207,35 +205,34 @@ router.put("/",async(req,res)=>{
 
 // postDelete
 router.delete("/",async(req,res)=>{
-    const {usernum,postnum} = req.body; //애초에 프론트엔드에서 예외처리를 해줘도 백엔드에서 한번더 점검해야 합니다.(세션을 통해서)
-    console.log("유저번호랑 글 번호입니다@@@@@@@@@")
-    console.log(postnum)
-    console.log(usernum)
-    
+    const {postnum} = req.body; //애초에 프론트엔드에서 예외처리를 해줘도 백엔드에서 한번더 점검해야 합니다.(세션을 통해서)    
     const result = {
         "success" : false,
         "message" : ""
     }
-    if(usernum.length == 0 || postnum.length == 0){
-        result.message = "매개변수 전달오류"
-        res.send(result)
-    } else{
-        var client = new Client(db.pgConnect)
-        try{
+    var client = null
+    try{
+        const numCheck = new inputCheck(postnum)
+        if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
+        else{
+            client = new Client(db.pgConnect)
             client.connect()
             const sql = `DELETE FROM post WHERE postnum = $1 AND usernum = $2;`
+            const usernum = await req.session.userNum
             const value = [postnum,usernum]
+            console.log(postnum,usernum)
             const data = await client.query(sql,value)
 
             result.success = true
-            result.message = "게시글 삭제 성공"                    
-        }catch(err){
-            console.log("/post",err.message)
-            result.message = err.message
-        }
-        client.end()
+            result.message = "게시글 삭제 성공"  
+        }                  
+    }catch(err){
+        console.log("/post",err.message)
+        result.message = err.message
+    }finally{
+        if(client) client.end()
         res.send(result)
-    }   
+    }
 })
 
 

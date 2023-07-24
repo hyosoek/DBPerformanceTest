@@ -1,6 +1,6 @@
 
 const initProfileData = async() =>{
-    const response = await fetch(`/profile?usernum=${sessionStorage.getItem("usernum")}`);
+    const response = await fetch(`/profile`);
     const result = await response.json();
     console.log(result)
 
@@ -37,7 +37,6 @@ const profileFixEvent = () =>{
             "Content-Type":"application/json"
         },
         "body":JSON.stringify({
-            "usernum": sessionStorage.getItem("usernum"),
             "mail": document.getElementById("fixedmail").value,
             "birth": document.getElementById("fixedbirth").value,
             "contact":  document.getElementById("fixedcontact").value
@@ -69,7 +68,6 @@ const withdrawalEvent = () =>{
                 "Content-Type":"application/json"
             },
             "body":JSON.stringify({
-                "usernum": sessionStorage.getItem("usernum"),
                 "pw": requirePw
             })
         }) 

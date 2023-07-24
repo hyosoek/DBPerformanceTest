@@ -2,7 +2,6 @@ const Configure = require('@sub0709/json-config');
 const conf = Configure.load('config.json');
 
 class inputCheck {
-
     constructor(input) {
       this.input = input;
       this.result = true;
@@ -23,21 +22,21 @@ class inputCheck {
         return this;
     }
     
-    // isNull = () => {
-    //   if(this.input == null){
-    //       this.result = false;
-    //       this.errMessage =("Null input")
-    //   }  
-    //   return this;
-    // }
+    isNull = () => {
+      if(this.input == null){
+          this.result = false;
+          this.errMessage =("Null input")
+      }  
+      return this;
+    }
   
-    // isUndefined = () => {
-    //   if(this.input == undefined){
-    //       this.result = false;
-    //       this.errMessage =("Undefined input")
-    //   }  
-    //   return this;
-    // }
+    isUndefined = () => {
+      if(this.input == undefined){
+          this.result = false;
+          this.errMessage =("Undefined input")
+      }  
+      return this;
+    }
 
     isMinSize = (size) =>{
         if(this.input.length < size){

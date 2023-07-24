@@ -98,7 +98,6 @@ const fixPostEvent = async() =>{
             "Content-Type":"application/json"
         },
         "body":JSON.stringify({
-            "usernum" : sessionStorage.getItem("usernum"),
             "title" : document.getElementById("fixedTitle").value,
             "detail": document.getElementById("fixedDetail").value,
             "postnum": postnum
@@ -131,7 +130,6 @@ const deletePostEvent = async() =>{
                 "Content-Type":"application/json"
             },
             "body":JSON.stringify({
-                "usernum" : sessionStorage.getItem("usernum"),
                 "postnum" : postnum
             })
         }) 
@@ -159,7 +157,6 @@ const writeCommentEvent = async() =>{
         },
         "body":JSON.stringify({
             "detail": document.getElementById("detail").value,
-            "usernum": sessionStorage.getItem("usernum"),
             "postnum": postnum
         })
     }) 
@@ -179,8 +176,7 @@ const deleteCommentEvent = async() =>{
             "Content-Type":"application/json"
         },
         "body":JSON.stringify({
-            "commentnum" : commentnumList[0],
-            "usernum": sessionStorage.getItem("usernum")
+            "commentnum" : commentnumList[0]
         })
     }) 
     const result = await response.json();

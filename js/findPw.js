@@ -15,14 +15,14 @@ const findID = async() =>{
         document.getElementById("idInput").disabled = true;
         document.getElementById("nameInput").disabled = true;
         document.getElementById("mailInput").disabled = true;
-        changePwEvent(result.usernum)
+        changePwEvent()
     }
     else{
         document.getElementById("resultPw").innerText = "존재하지 않는 아이디입니다"
     }
 }
 
-const changePwEvent = (usernum)=>{
+const changePwEvent = ()=>{
     for(let i = 1 ; i <= 2 ;i++){
         const pw = document.createElement("input")
         pw.id = "pw"+i
@@ -34,11 +34,10 @@ const changePwEvent = (usernum)=>{
     changePwBtn.type = "button"
     changePwBtn.value = "변경하기"
     document.getElementById("changePwArea").appendChild(changePwBtn)
-    console.log(usernum)
-    changePwBtn.addEventListener('click', changePw(usernum))
+    changePwBtn.addEventListener('click', changePw())
 }
 
-const changePw = (usernum) =>{
+const changePw = () =>{
     return async function(event) {
         const response = await fetch("/account/modify-pw",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
             "method" : "PUT",
@@ -46,7 +45,6 @@ const changePw = (usernum) =>{
                 "Content-Type":"application/json"
             },
             "body":JSON.stringify({
-                "usernum": usernum,
                 "newpw1": document.getElementById("pw1").value,
                 "newpw2": document.getElementById("pw2").value
             })

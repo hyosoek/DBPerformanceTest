@@ -12,8 +12,7 @@ const writePostEvent = async() =>{
         },
         "body":JSON.stringify({
             "title": document.getElementById("title").value,
-            "detail": document.getElementById("detail").value,
-            "usernum": sessionStorage.getItem("usernum")
+            "detail": document.getElementById("detail").value
         })
     }) 
     const result = await response.json();

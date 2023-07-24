@@ -92,7 +92,7 @@ router.get("/",async(req,res)=>{
 })
 // commentWrite
 router.post("/",async(req,res)=>{
-    const {detail,usernum,postnum} = req.body;
+    const {detail,postnum} = req.body;
     const result = {
         "success" : false,
         "message" : "",
@@ -101,15 +101,14 @@ router.post("/",async(req,res)=>{
     let client = null
     try{
         const detailCheck = new inputCheck(detail)
-        const numCheck1 = new inputCheck(usernum)
         const numCheck2 = new inputCheck(postnum)
 
         if (detailCheck.isMinSize(2).isMaxSize(1023).isEmpty().result != true) result.message = detailCheck.errMessage
-        else if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
         else if (numCheck2.isEmpty().result != true) result.message = numCheck2.errMessage
         else{
             client = new Client(db.pgConnect)
             client.connect()
+            const usernum = await req.session.userNum
             const sql = `INSERT INTO comment(detail,usernum,postnum) VALUES($1,$2,$3);`
             const value = [detail,usernum,postnum]
             const data = await client.query(sql,value)
@@ -127,7 +126,7 @@ router.post("/",async(req,res)=>{
 })
 // commentFix
 router.put("/",async(req,res)=>{
-    const {detail,commentnum,usernum} = req.body;
+    const {detail,commentnum} = req.body;
     //auto date
     const result = {
         "success" : false,
@@ -137,14 +136,13 @@ router.put("/",async(req,res)=>{
     try{
         const detailCheck = new inputCheck(detail)
         const numCheck1 = new inputCheck(commentnum)
-        const numCheck2 = new inputCheck(usernum)
 
         if (detailCheck.isMinSize(2).isMaxSize(1023).isEmpty().result != true) result.message = detailCheck.errMessage
         else if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
-        else if (numCheck2.isEmpty().result != true) result.message = numCheck2.errMessage
         else{
             client = new Client(db.pgConnect)
             client.connect()
+            const usernum = req.session.userNum
             const sql = `UPDATE comment SET detail = $1 WHERE commentnum = $2 AND usernum = $3;`
             const value = [detail,commentnum,usernum]
             const data = await client.query(sql,value)
@@ -163,7 +161,7 @@ router.put("/",async(req,res)=>{
 })
 // commentDelete
 router.delete("/",async(req,res)=>{
-    const {commentnum,usernum} = req.body;
+    const {commentnum} = req.body;
     const result = {
         "success" : false,
         "message" : ""
@@ -171,13 +169,12 @@ router.delete("/",async(req,res)=>{
     var client = null
     try{
         const numCheck1 = new inputCheck(commentnum)
-        const numCheck2 = new inputCheck(usernum)
         
         if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
-        else if (numCheck2.isEmpty().result != true) result.message = numCheck2.errMessage
         else{
             client = new Client(db.pgConnect)
             client.connect()
+            const usernum = req.session.userNum
             const sql = `DELETE FROM comment WHERE commentnum = $1 AND usernum = $2;`
             const value = [commentnum,usernum]
             const data = await client.query(sql,value)

@@ -1,6 +1,5 @@
 //전역변수는 프론트엔드가 알아서 해줄 것임.
 //원래는 매개변수가 맞지만 귀찮음
-
 let pageNum = 1
 let pageMaxCount = 0
 
@@ -28,6 +27,7 @@ const loadPostPage = (pageNum) =>{
     })
 }
 
+
 const loadBeforePostPage = () =>{
     if(pageNum != 1){
         pageNum = pageNum - 1
@@ -51,6 +51,20 @@ const loadPageMaxCount = (pageNum) =>{
         console.log(result)
         pageMaxCount = result.pagecount
         loadPostPage(pageNum)
+    })
+}
+
+const logOutEvent = () =>{
+    fetch(`/account/log-out`)
+    .then((response) => {
+        return response.json()
+    })
+    .then((result) => {
+        try{
+            window.location.href = '/loginPage';
+        } catch{
+            console.log("예상못한 에러 발생")
+        }
     })
 }
 
