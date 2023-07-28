@@ -1,6 +1,7 @@
 const express =require("express")
 var session = require('express-session');
 const app = express()
+
 app.use(session({
     secret: 'secret',
     saveUninitialized: true,
@@ -12,8 +13,9 @@ app.use(session({
 app.use(express.json())
 
 const path = require("path")
-const https = require("https")//통신 패키지
-const fs = require("fs")// 파일 가져올 때 사용하는 패키지
+const https = require("https") //통신 패키지
+const fs = require("fs") //파일 가져올 때 사용하는 패키지
+
 
 
  
@@ -24,7 +26,8 @@ const sslOptions = {
     "cert": fs.readFileSync(path.join(__dirname,"ssl/cert.pem")),
     "passphrase" : "1234" 
 }
-app.get("*",(req,res,next) =>{//next는 자동으로 넘어가줌
+
+app.get("*",(req,res,next) =>{ //next는 자동으로 넘어가줌
     const protocol = req.protocol //프로토콜을 가져올 수 있음
     if(protocol == "https"){
         next()
@@ -32,8 +35,16 @@ app.get("*",(req,res,next) =>{//next는 자동으로 넘어가줌
         const destination = `https://${req.hostname}:8443${req.url}`
         res.redirect(destination)
     }
-
 })
+
+const customMiddleware = (req, res, next) => {
+    // 이곳에 모든 API 호출마다 실행되는 공통 기능을 구현합니다.
+    console.log(req.ip);
+    console.log('API 호출마다 실행되는 미들웨어 동작');
+  
+    // 다음 미들웨어로 진행합니다.
+    next();
+};
 
 
 
@@ -55,6 +66,9 @@ app.use('/log', logRouter.router);
 
 const pages = require("./router/pages")
 app.use("/",pages) 
+
+
+app.use(customMiddleware);
 
 
 app.use("/js",express.static(__dirname + "/js"))

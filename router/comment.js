@@ -4,6 +4,9 @@ const inputCheck = require("../module/inputCheck.js");
 const {Client} = require("pg")
 const db = require('../database.js');
 
+const logg = require("./log.js");
+const session = require("express-session");
+
 
 // 코멘트 페이지 개수 가져오기
 router.get("/count",async(req,res)=>{
@@ -31,6 +34,16 @@ router.get("/count",async(req,res)=>{
                 result.success = true
                 result.pagecount = parseInt(((row[0].count)-1)/commentperpage) +1
                 result.message = "총 코멘트 페이지 수입니다."
+
+                const tempJSON = {
+                    "id" : req.session.userId, 
+                    "ip" : req.ip,
+                    "api" : req.originalUrl,
+                    "rest" : "GET", //
+                    "request" : JSON.parse(JSON.stringify(req.query)), 
+                    "response" : result
+                }
+                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
             }
             else{
                 result.message == "댓글이 존재하지 않습니다."
@@ -76,6 +89,16 @@ router.get("/",async(req,res)=>{
                 result.message = "댓글 목록"
                 //data.forEach((elem)=>elem.date = dateParse.parseYMDHM(elem.date))
                 result.commentList = row
+
+                const tempJSON = {
+                    "id" : req.session.userId, 
+                    "ip" : req.ip,
+                    "api" : req.originalUrl,
+                    "rest" : "GET", //
+                    "request" : JSON.parse(JSON.stringify(req.query)), 
+                    "response" : result
+                }
+                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
             }
             else{
                 result.message == "댓글이 존재하지 않습니다."
@@ -115,6 +138,16 @@ router.post("/",async(req,res)=>{
             
             result.success = true
             result.message = "작성 완료"
+
+            const tempJSON = {
+                "id" : req.session.userId, 
+                "ip" : req.ip,
+                "api" : req.originalUrl,
+                "rest" : "POST", //
+                "request" : JSON.parse(JSON.stringify(req.body)), 
+                "response" : result
+            }
+            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }
     }catch(err){
         console.log("POST /comment",err.message)
@@ -149,6 +182,16 @@ router.put("/",async(req,res)=>{
             
             result.success = true
             result.message = "수정 완료"
+
+            const tempJSON = {
+                "id" : req.session.userId, 
+                "ip" : req.ip,
+                "api" : req.originalUrl,
+                "rest" : "PUT", //
+                "request" : JSON.parse(JSON.stringify(req.body)), 
+                "response" : result
+            }
+            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }
     }catch(err){
         console.log("PUT /comment",err.message)
@@ -182,6 +225,16 @@ router.delete("/",async(req,res)=>{
             console.log(row)
             result.success = true
             result.message = "삭제 완료"
+
+            const tempJSON = {
+                "id" : req.session.userId, 
+                "ip" : req.ip,
+                "api" : req.originalUrl,
+                "rest" : "DELETE", //
+                "request" : JSON.parse(JSON.stringify(req.body)), 
+                "response" : result
+            }
+            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }
     }catch(err){
         console.log("DELETE /comment",err.message)

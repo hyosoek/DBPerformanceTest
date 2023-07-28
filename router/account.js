@@ -76,7 +76,7 @@ router.get("/log-out",async(req,res)=>{
             "ip" : req.ip,
             "api" : req.originalUrl, //parsing이 필요할 듯
             "rest" : "GET", //
-            "request" : JSON.parse(JSON.stringify(req.body)), // 굳이 안해도 될 거 같은데...
+            "request" : JSON.parse(JSON.stringify(req.query)), // 굳이 안해도 될 거 같은데...
             "response" : result
         }
         logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
@@ -108,15 +108,22 @@ router.get("/id-exist",async(req,res)=>{ //아이디 중복체크
             const data = await client.query(sql,values)
 
             const row = data.rows
-            console.log(row)
 
             if(parseInt(row[0].count) == 0) {
                 result.success  = true
                 result.message = "사용가능한 아이디입니다."
+                const tempJSON = {
+                    "id" : id , 
+                    "ip" : req.ip,
+                    "api" : req.originalUrl,
+                    "rest" : "GET", //
+                    "request" : JSON.parse(JSON.stringify(req.query)), 
+                    "response" : result
+                }
+                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
             } else{
                 result.message = "이미 존재하는 id입니다."
             }
-            
         }
     }catch(err){
         console.log("GET /account/id-exist/",err.message)
@@ -158,6 +165,16 @@ router.post("/",async(req,res)=>{
     
             result.success  = true
             result.message = "회원가입 성공" 
+
+            const tempJSON = {
+                "id" : id , 
+                "ip" : req.ip,
+                "api" : req.originalUrl,
+                "rest" : "POST", //
+                "request" : JSON.parse(JSON.stringify(req.body)), 
+                "response" : result
+            }
+            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }
     }catch(err){
         console.log("POST /account",err.message)
@@ -196,6 +213,17 @@ router.get("/find-id",async(req,res)=>{
                 result.id = row[0].id
                 result.success  = true
                 result.message = "귀하의 아이디를 찾았습니다."
+
+                const tempJSON = {
+                    "id" : row[0].id , 
+                    "ip" : req.ip,
+                    "api" : req.originalUrl,
+                    "rest" : "GET", //
+                    "request" : JSON.parse(JSON.stringify(req.query)), 
+                    "response" : result
+                }
+                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
+
             } else{
                 result.message = "존재하지 않는 정보입니다."
             }
@@ -237,11 +265,24 @@ router.get("/certification",async(req,res)=>{
             const row = data.rows
             if(row.length != 0) {
                 req.session.userNum = await row[0].usernum
+                req.session.userId = id
                 result.success  = true
                 result.message = "귀하의 아이디를 찾았습니다."
+
+                const tempJSON = {
+                    "id" : id, 
+                    "ip" : req.ip,
+                    "api" : req.originalUrl,
+                    "rest" : "GET", //
+                    "request" : JSON.parse(JSON.stringify(req.query)), 
+                    "response" : result
+                }
+                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
+
             } else{
-                if (req.session.userNum) { //세션정보가 존재하는 경우
+                if (req.session.userNum || req.session.userId) { //세션정보가 존재하는 경우
                     delete req.session.userNum
+                    delete req.session.userId
                 }
                 result.message = "존재하지 않는 정보입니다."
             }
@@ -276,6 +317,16 @@ router.put("/modify-pw",async(req,res)=>{
 
             result.success  = true
             result.message = "비밀번호 변경 완료"
+            
+            const tempJSON = {
+                "id" : req.session.userId,
+                "ip" : req.ip,
+                "api" : req.originalUrl,
+                "rest" : "PUT", //
+                "request" : JSON.parse(JSON.stringify(req.body)), 
+                "response" : result
+            }
+            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }
     }catch(err){
         console.log("PUT /account/modify-pw",err.message)
@@ -298,7 +349,6 @@ router.delete("/",async(req,res)=>{
         const pwCheck = new inputCheck(pw)
 
         if(pwCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = pwCheck.errMessage
-        else if(numCheck.isEmpty()) result.message = numCheck.errMessage
         else {
             client = new Client(db.pgConnect)
             client.connect()
@@ -306,6 +356,16 @@ router.delete("/",async(req,res)=>{
             const sql = "DELETE FROM account WHERE usernum = $1 AND pw = $2;"
             const values = [usernum,pw]
             const data = await client.query(sql,values)
+
+            const tempJSON = {
+                "id" : req.session.userId, 
+                "ip" : req.ip,
+                "api" : req.originalUrl,
+                "rest" : "DELETE", //
+                "request" : JSON.parse(JSON.stringify(req.body)), 
+                "response" : result
+            }
+            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
             req.session.destroy(function(err){})
 
             result.success  = true

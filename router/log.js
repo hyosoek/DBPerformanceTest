@@ -6,9 +6,9 @@ const inputCheck = require("../module/inputCheck.js");
 const postLog = async(id,ip,api,rest,request,response) =>{
     console.log("init postLog success")
     const result = {
-                "success" :false,
-                "message" :null
-            }
+            "success" :false,
+            "message" :null
+        }
     let conn = null //중요!
     try{
         const idCheck = new inputCheck(id)
@@ -72,6 +72,7 @@ router.get("/",async(req,res) =>{
             isNewest = parseInt(newest) * (-1)
 
             let data = null
+
             if(id == ""){
                 data = await conn.db("healthpartner")
                 .collection("log")
@@ -130,7 +131,7 @@ router.get("/maxpage",async(req,res) =>{
             }
             console.log(count)
 
-            result.maxpage = Math.ceil(count / 10);
+            result.maxpage = Math.ceil(count / process.env.logPerPage);
             result.success = true
             console.log("success!")
         }

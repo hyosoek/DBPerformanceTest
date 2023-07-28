@@ -8,7 +8,6 @@ const initEvent = async() =>{
         return response.json()
     })
     .then((result) => {
-        console.log(result)
         loadLogEvent(result.data) //무조건 최신순 10개 들어옵니다.
     })
     await fetch(`/log/maxpage?id=${""}`)
@@ -16,7 +15,6 @@ const initEvent = async() =>{
         return response.json()
     })
     .then((result) => {
-        console.log(result)
         cur = 1
         max = result.maxpage
         setPage()
@@ -28,13 +26,14 @@ const setPage = async() =>{
 }
 
 const loadLogEvent = async(data) =>{
+    
+    console.log()
     document.getElementById("logList").replaceChildren();
     for(let i =0;i<data.length;i++){
         var logItem = document.createElement("input");
         logItem.type="button";
 
         logItem.value = "id:   " + data[i].id  +"\n"+ "ip:   " + data[i].ip  + "\n"
-                    + "api:   "+data[i].api  + "\n" +"REST:   "+ data[i].rest  + "\n"
                     + "api:   "+data[i].api  + "\n" +"REST:   "+ data[i].rest  + "\n"
                     + "REQ:   "+JSON.stringify(data[i].request,null)  + "\n" 
                     + "RES:   "+JSON.stringify(data[i].response,null)  + "\n"
@@ -44,23 +43,25 @@ const loadLogEvent = async(data) =>{
     }
 }
 
-const loadNewPageEvent = async() =>{
+const loadNewPageEvent = async(pagenum) =>{
+
     let isNewest = null
-    if(document.getElementById("newest").checked){
-        isNewest = 1
-    } else if(document.getElementById("oldest").checked){
+    if(document.getElementById("oldest").checked){
         isNewest = -1
+    } else{
+        isNewest = 1
     }
 
     document.getElementById("")
-    await fetch(`/log?newest=${isNewest}&id=${document.getElementById("idInput").value}&pagenum=${1}`)
+    await fetch(`/log?newest=${isNewest}&id=${document.getElementById("idInput").value}&pagenum=${pagenum}`)
     .then((response) => {
         return response.json()
     })
     .then((result) => {
-        console.log(result)
         loadLogEvent(result.data) //무조건 최신순 10개 들어옵니다.
     })
+
+    await setPage()
 }
 
 
@@ -76,6 +77,24 @@ const logOutEvent = async() =>{
             console.log("예상못한 에러 발생")
         }
     })
+}
+
+const loadBeforePageEvent = async() =>{
+    if(cur == 1){
+        alert("첫페이지임")
+    } else{
+        cur = cur - 1;
+        loadNewPageEvent(cur);      
+    }
+}
+
+const loadAfterPageEvent = async() =>{
+    if(cur == max){
+        alert("마지막페이지임")
+    } else{
+        cur = cur + 1;
+        loadNewPageEvent(cur);
+    }
 }
 
 

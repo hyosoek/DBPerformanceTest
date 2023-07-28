@@ -4,6 +4,9 @@ const {Client} = require("pg")
 const db = require('../database.js');
 const inputCheck = require("../module/inputCheck.js");
 
+const logg = require("./log.js");
+const session = require("express-session");
+
 // 프로필보기
 router.get("/",async(req,res)=>{
     const result = {
@@ -34,6 +37,16 @@ router.get("/",async(req,res)=>{
                 result.contact = row[0].contact
                 result.success  = true
                 result.message = "귀하의 프로필 정보입니다."
+
+                const tempJSON = {
+                    "id" : req.session.userId, 
+                    "ip" : req.ip,
+                    "api" : req.originalUrl,
+                    "rest" : "GET", //
+                    "request" : JSON.parse(JSON.stringify(req.query)), 
+                    "response" : result
+                }
+                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
             } else{
                 result.message = "존재하지 않는 정보입니다."
             }
@@ -73,6 +86,16 @@ router.put("/",async(req,res)=>{
 
             result.success  = true
             result.message = "프로필정보 수정완료"
+
+            const tempJSON = {
+                "id" : req.session.userId, 
+                "ip" : req.ip,
+                "api" : req.originalUrl,
+                "rest" : "PUT", //
+                "request" : JSON.parse(JSON.stringify(req.body)), 
+                "response" : result
+            }
+            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }
         
     }catch(err){
