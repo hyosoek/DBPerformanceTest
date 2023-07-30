@@ -3,7 +3,7 @@ const path = require("path")
 
 
 //왜 모듈화하지 않았는가? = 각각 query parameter나 경로가 다를 수 있음 + 한눈에 보기 좋음 (정규표현식으로 가능은 할 거 같은데 굳이...?)
-router.get("/loginPage",(req,res)=>{
+router.get("/",(req,res)=>{
     res.sendFile(path.join(__dirname, "../index.html")) //..을 계산해줌
 })
 

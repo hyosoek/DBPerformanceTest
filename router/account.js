@@ -8,7 +8,7 @@ const logg = require("./log.js");
 const session = require("express-session");
 
 // 로그인
-router.post("/log-in",async(req,res)=>{
+router.post("/log-in",async(req,res,next)=>{
     const {id,pw} = req.body;
     const result = {
         "success" : false,
@@ -18,49 +18,37 @@ router.post("/log-in",async(req,res)=>{
     try{
         const idCheck = new inputCheck(id)
         const pwCheck = new inputCheck(pw)
-
-        if (idCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) throw new Error({"message":idCheck.errMessage})
-        if(pwCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) throw new Error({"message":pwCheck.errMessage})
+        if (idCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = idCheck.errMessage
+        if(pwCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = pwCheck.errMessage
         
         client = new Client(db.pgConnect)
         client.connect()
         const sql = "SELECT id,usernum,isadmin FROM account WHERE id=$1 AND pw = $2;"
         const values = [id,pw]
         const data = await client.query(sql,values)
-
         const row = data.rows
+
         if(row.length != 0) {
             result.success  = true
             result.message = "로그인 성공"
 
             req.session.userNum = await row[0].usernum
             req.session.userId = await row[0].id
-
-            if(row[0].isadmin){
-                req.session.isAdmin = true
-            }else{
-                req.session.isAdmin = false
-            }
+            if(row[0].isadmin) req.session.isAdmin = true
+            else req.session.isAdmin = false
             
-            const tempJSON = {
-                "id" : req.session.userId , //이후에는 req.session.usernum,
-                "ip" : req.ip,
-                "api" : req.originalUrl, //parsing이 필요할 듯
-                "rest" : "POST", //
-                "request" : JSON.parse(JSON.stringify(req.body)), // 굳이 안해도 될 거 같은데...
-                "response" : result
-            }
-            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
-
         } else{
             result.message = "해당하는 회원정보가 없습니다."
         }
+
     }catch(err){
         console.log("POST /account/log-in", err.message)
         result.message = err.message
     } finally{
-        if(client) client.end() 
+        if(client) client.end()
         res.send(result)
+        req.resData = result
+        next()
     }
        
 })
@@ -89,6 +77,7 @@ router.get("/log-out",async(req,res)=>{
         res.send(result)
     }    
 })
+
 // 회원가입 - 아이디 중복체크
 router.get("/id-exist",async(req,res)=>{ //아이디 중복체크
     const {id} = req.query;

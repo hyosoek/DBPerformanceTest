@@ -1,31 +1,32 @@
+//environment setting
 const express =require("express")
 var session = require('express-session');
-const app = express()
-
-app.use(session({
-    secret: 'secret',
-    saveUninitialized: true,
-    cookie: { maxAge : 600000 },
-    rolling : true,
-    resave: true
-})); // 굳이 env 저장할 필요는 없는 듯
-
-app.use(express.json())
-
 const path = require("path")
-const https = require("https") //통신 패키지
-const fs = require("fs") //파일 가져올 때 사용하는 패키지
-
-
-
- 
-
+const https = require("https")
+const fs = require("fs") 
+const log = require("./module/logging.js");
 
 const sslOptions = {
     "key":fs.readFileSync(path.join(__dirname,"ssl/key.pem")),
     "cert": fs.readFileSync(path.join(__dirname,"ssl/cert.pem")),
     "passphrase" : "1234" 
 }
+const sessionOptions = {
+    secret: 'secret',
+    saveUninitialized: true,
+    cookie: { maxAge : 600000 },
+    rolling : true,
+    resave: true
+}
+
+//middleware with API
+const app = express()
+
+app.use(session(sessionOptions)); // 굳이 env 저장할 필요는 없는 듯
+
+app.use(express.json())
+
+app.use("/js",express.static(__dirname + "/js"))
 
 app.get("*",(req,res,next) =>{ //next는 자동으로 넘어가줌
     const protocol = req.protocol //프로토콜을 가져올 수 있음
@@ -37,15 +38,9 @@ app.get("*",(req,res,next) =>{ //next는 자동으로 넘어가줌
     }
 })
 
-const customMiddleware = (req, res, next) => {
-    // 이곳에 모든 API 호출마다 실행되는 공통 기능을 구현합니다.
-    console.log(req.ip);
-    console.log('API 호출마다 실행되는 미들웨어 동작');
-  
-    // 다음 미들웨어로 진행합니다.
-    next();
+const loggingMiddleware = (req, res) => { //정의
+    log.logging(req,res,next)
 };
-
 
 
 //API
@@ -61,17 +56,14 @@ app.use("/post",postApi)
 const commentApi = require("./router/comment")
 app.use("/comment",commentApi) 
 
-const logRouter = require("./router/log")
-app.use('/log', logRouter.router);
+const logRouterApi = require("./router/log")
+app.use('/log', logRouterApi);
 
 const pages = require("./router/pages")
 app.use("/",pages) 
 
+app.use(loggingMiddleware); //api 호출 이후 next를 사용해주면 됨
 
-app.use(customMiddleware);
-
-
-app.use("/js",express.static(__dirname + "/js"))
 
 //서버 시작
 app.listen(8000,() => {

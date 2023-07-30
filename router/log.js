@@ -3,51 +3,6 @@ const client = require("mongodb").MongoClient
 
 const inputCheck = require("../module/inputCheck.js");
 
-const postLog = async(id,ip,api,rest,request,response) =>{
-    console.log("init postLog success")
-    const result = {
-            "success" :false,
-            "message" :null
-        }
-    let conn = null //중요!
-    try{
-        const idCheck = new inputCheck(id)
-        const ipCheck = new inputCheck(ip)
-        const apiCheck = new inputCheck(api)
-        const restCheck = new inputCheck(rest)
-        const requestCheck = new inputCheck(request)
-        const responseCheck = new inputCheck(response)
-
-        if (idCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = idCheck.errMessage
-        else if (ipCheck.isEmpty().result != true) result.message = ipCheck.errMessage // isIP 넣어야할 듯
-        else if (apiCheck.isMinSize(1).isMaxSize(1023).isEmpty().result != true) result.message = apiCheck.errMessage
-        else if (restCheck.isMinSize(1).isMaxSize(10).isEmpty().result != true) result.message = restCheck.errMessage
-        else if (requestCheck.isEmpty().result != true) result.message = requestCheck.errMessage
-        else if (responseCheck.isEmpty().result != true) result.message = responseCheck.errMessage
-        else{
-            const currentTime = new Date();
-            conn  = await client.connect(process.env.mongoDb)//계정이 없어서 오로지 하나의 변수
-            const document = {
-                "id" : id,
-                "ip" : ip,
-                "api" : api,
-                "rest" : rest,
-                "request" : request,
-                "response" : response,
-                "time" : currentTime
-            }
-            await conn.db("healthpartner").collection("log").insertOne(document)
-            result.success = true
-        }
-    }catch(err){
-        console.log(`POST log Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
-        result.message = err.message
-    }finally{
-        if(conn) conn.close()
-        return result
-    }
-}
-
 router.get("/",async(req,res) =>{
     const {newest,id,pagenum} = req.query;
     const result = {
@@ -145,4 +100,4 @@ router.get("/maxpage",async(req,res) =>{
 })
 
 
-module.exports = { router, postLog }
+module.exports = router
