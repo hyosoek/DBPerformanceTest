@@ -39,7 +39,7 @@ app.get("*",(req,res,next) =>{ //next는 자동으로 넘어가줌
 })
 
 const loggingMiddleware = (req, res) => { //정의
-    log.logging(req,res,next)
+    log.logging(req,res)
 };
 
 

@@ -8,15 +8,7 @@ const initEvent = async() =>{
         return response.json()
     })
     .then((result) => {
-        loadLogEvent(result.data) //무조건 최신순 10개 들어옵니다.
-    })
-    await fetch(`/log/maxpage?id=${""}`)
-    .then((response) => {
-        return response.json()
-    })
-    .then((result) => {
-        cur = 1
-        max = result.maxpage
+        loadLogEvent(result) //무조건 최신순 10개 들어옵니다.
         setPage()
     })
 }
@@ -25,9 +17,9 @@ const setPage = async() =>{
     document.getElementById("showPageNum").innerText = `${cur}/${max}페이지입니다.`
 }
 
-const loadLogEvent = async(data) =>{
-    
-    console.log()
+const loadLogEvent = async(result) =>{
+    max = result.maxpage
+    const data = result.data
     document.getElementById("logList").replaceChildren();
     for(let i =0;i<data.length;i++){
         var logItem = document.createElement("input");
@@ -37,22 +29,22 @@ const loadLogEvent = async(data) =>{
                     + "api:   "+data[i].api  + "\n" +"REST:   "+ data[i].rest  + "\n"
                     + "REQ:   "+JSON.stringify(data[i].request,null)  + "\n" 
                     + "RES:   "+JSON.stringify(data[i].response,null)  + "\n"
+                    + "TIME:   "+ data[i].time  + "\n"
         logItem.style.display = "block";
         logItem.style.backgroundColor = 'white';
+        logItem.style.display = 'flex';
+        logItem.style.justifyContent = 'flex-start';
         document.getElementById("logList").appendChild(logItem);
     }
 }
 
 const loadNewPageEvent = async(pagenum) =>{
-
     let isNewest = null
     if(document.getElementById("oldest").checked){
         isNewest = -1
     } else{
         isNewest = 1
     }
-
-    document.getElementById("")
     await fetch(`/log?newest=${isNewest}&id=${document.getElementById("idInput").value}&pagenum=${pagenum}`)
     .then((response) => {
         return response.json()

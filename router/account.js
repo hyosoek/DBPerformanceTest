@@ -36,7 +36,6 @@ router.post("/log-in",async(req,res,next)=>{
             req.session.userId = await row[0].id
             if(row[0].isadmin) req.session.isAdmin = true
             else req.session.isAdmin = false
-            
         } else{
             result.message = "해당하는 회원정보가 없습니다."
         }
@@ -47,27 +46,19 @@ router.post("/log-in",async(req,res,next)=>{
     } finally{
         if(client) client.end()
         res.send(result)
+
         req.resData = result
         next()
     }
        
 })
 //로그아웃
-router.get("/log-out",async(req,res)=>{
+router.get("/log-out",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : ""
     }
     try{
-        const tempJSON = {
-            "id" : req.session.userId , //이후에는 req.session.usernum,
-            "ip" : req.ip,
-            "api" : req.originalUrl, //parsing이 필요할 듯
-            "rest" : "GET", //
-            "request" : JSON.parse(JSON.stringify(req.query)), // 굳이 안해도 될 거 같은데...
-            "response" : result
-        }
-        logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         req.session.destroy(function(err){})
         result.success = true
     }catch(err){
@@ -75,11 +66,13 @@ router.get("/log-out",async(req,res)=>{
         result.message = err.message
     } finally{
         res.send(result)
+        req.resData = result
+        next() // 세션이 아닌 다른 접근...?
     }    
 })
 
 // 회원가입 - 아이디 중복체크
-router.get("/id-exist",async(req,res)=>{ //아이디 중복체크
+router.get("/id-exist",async(req,res,next)=>{ //아이디 중복체크
     const {id} = req.query;
     const result = {
         "success" : false,
@@ -101,15 +94,6 @@ router.get("/id-exist",async(req,res)=>{ //아이디 중복체크
             if(parseInt(row[0].count) == 0) {
                 result.success  = true
                 result.message = "사용가능한 아이디입니다."
-                const tempJSON = {
-                    "id" : id , 
-                    "ip" : req.ip,
-                    "api" : req.originalUrl,
-                    "rest" : "GET", //
-                    "request" : JSON.parse(JSON.stringify(req.query)), 
-                    "response" : result
-                }
-                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
             } else{
                 result.message = "이미 존재하는 id입니다."
             }
@@ -120,11 +104,14 @@ router.get("/id-exist",async(req,res)=>{ //아이디 중복체크
     }finally{
         if(client) client.end() 
         res.send(result)
+        
+        req.resData = result
+        next()
     }
     
 })
 // 회원가입
-router.post("/",async(req,res)=>{
+router.post("/",async(req,res,next)=>{
     const {id,pw1,pw2,name,mail,birth,contact} = req.body;
     const result = {
         "success" : false,
@@ -154,16 +141,6 @@ router.post("/",async(req,res)=>{
     
             result.success  = true
             result.message = "회원가입 성공" 
-
-            const tempJSON = {
-                "id" : id , 
-                "ip" : req.ip,
-                "api" : req.originalUrl,
-                "rest" : "POST", //
-                "request" : JSON.parse(JSON.stringify(req.body)), 
-                "response" : result
-            }
-            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }
     }catch(err){
         console.log("POST /account",err.message)
@@ -171,10 +148,13 @@ router.post("/",async(req,res)=>{
     }finally{
         if(client) client.end() 
         res.send(result)
+        
+        req.resData = result
+        next()
     }
 })
 // 아이디 찾기
-router.get("/find-id",async(req,res)=>{
+router.get("/find-id",async(req,res,next)=>{
     console.log(req)
     const {name,mail} = req.query; // 받아옴
     const result = {
@@ -203,16 +183,6 @@ router.get("/find-id",async(req,res)=>{
                 result.success  = true
                 result.message = "귀하의 아이디를 찾았습니다."
 
-                const tempJSON = {
-                    "id" : row[0].id , 
-                    "ip" : req.ip,
-                    "api" : req.originalUrl,
-                    "rest" : "GET", //
-                    "request" : JSON.parse(JSON.stringify(req.query)), 
-                    "response" : result
-                }
-                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
-
             } else{
                 result.message = "존재하지 않는 정보입니다."
             }
@@ -222,14 +192,16 @@ router.get("/find-id",async(req,res)=>{
         result.message = err.message
     }finally {
         if(client)client.end()
-        console.log(res)
         res.send(result)
+
+        req.resData = result
+        next()
     }
         
 
 })
 // 비번찾기 - 신원확인
-router.get("/certification",async(req,res)=>{
+router.get("/certification",async(req,res,next)=>{
     const {id,name,mail} = req.query; // 받아옴
     const result = {
         "success" : false,
@@ -257,17 +229,6 @@ router.get("/certification",async(req,res)=>{
                 req.session.userId = id
                 result.success  = true
                 result.message = "귀하의 아이디를 찾았습니다."
-
-                const tempJSON = {
-                    "id" : id, 
-                    "ip" : req.ip,
-                    "api" : req.originalUrl,
-                    "rest" : "GET", //
-                    "request" : JSON.parse(JSON.stringify(req.query)), 
-                    "response" : result
-                }
-                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
-
             } else{
                 if (req.session.userNum || req.session.userId) { //세션정보가 존재하는 경우
                     delete req.session.userNum
@@ -282,11 +243,14 @@ router.get("/certification",async(req,res)=>{
     } finally{
         if(client)client.end()
         res.send(result)
+
+        req.resData = result
+        next()
     }
    
 })
 // 비번찾기 - 비번변경
-router.put("/modify-pw",async(req,res)=>{
+router.put("/modify-pw",async(req,res,next)=>{
     const {newpw1,newpw2} = req.body; // 받아옴
     const result = {
         "success" : false,
@@ -306,16 +270,6 @@ router.put("/modify-pw",async(req,res)=>{
 
             result.success  = true
             result.message = "비밀번호 변경 완료"
-            
-            const tempJSON = {
-                "id" : req.session.userId,
-                "ip" : req.ip,
-                "api" : req.originalUrl,
-                "rest" : "PUT", //
-                "request" : JSON.parse(JSON.stringify(req.body)), 
-                "response" : result
-            }
-            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }
     }catch(err){
         console.log("PUT /account/modify-pw",err.message)
@@ -323,11 +277,14 @@ router.put("/modify-pw",async(req,res)=>{
     }finally{
         if(client)client.end()
         res.send(result)
+
+        req.resData = result
+        next()
     }
     
 })
 // 계정삭제
-router.delete("/",async(req,res)=>{
+router.delete("/",async(req,res,next)=>{
     const {pw} = req.body;
     const result = {
         "success" : false,
@@ -346,15 +303,6 @@ router.delete("/",async(req,res)=>{
             const values = [usernum,pw]
             const data = await client.query(sql,values)
 
-            const tempJSON = {
-                "id" : req.session.userId, 
-                "ip" : req.ip,
-                "api" : req.originalUrl,
-                "rest" : "DELETE", //
-                "request" : JSON.parse(JSON.stringify(req.body)), 
-                "response" : result
-            }
-            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
             req.session.destroy(function(err){})
 
             result.success  = true
@@ -366,8 +314,10 @@ router.delete("/",async(req,res)=>{
     } finally{
         if(client) client.end()
         res.send(result)
+
+        req.resData = result
+        next()
     }
-    
 })
 
 
