@@ -9,6 +9,7 @@ const initEvent = async() =>{
     })
     .then((result) => {
         loadLogEvent(result) //무조건 최신순 10개 들어옵니다.
+        cur = 1
         setPage()
     })
 }
@@ -38,6 +39,11 @@ const loadLogEvent = async(result) =>{
     }
 }
 
+const loadSearchEvent = async() =>{
+    cur = 1;
+    loadNewPageEvent(1)
+}
+
 const loadNewPageEvent = async(pagenum) =>{
     let isNewest = null
     if(document.getElementById("oldest").checked){
@@ -50,10 +56,10 @@ const loadNewPageEvent = async(pagenum) =>{
         return response.json()
     })
     .then((result) => {
-        loadLogEvent(result.data) //무조건 최신순 10개 들어옵니다.
+        loadLogEvent(result) //무조건 최신순 10개 들어옵니다.
+        setPage()
     })
 
-    await setPage()
 }
 
 
