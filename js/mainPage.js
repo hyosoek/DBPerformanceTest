@@ -9,7 +9,7 @@ const loadPostPage = (pageNum) =>{
         return response.json()
     })
     .then((result) => {
-        console.log(result.postList)
+        localStorage.setItem("token",result.token)
         document.getElementById("postboard").innerHTML = null
         for (let i = 0;i < result.postList.length; i++){
             document.getElementById("postboard")
@@ -55,7 +55,7 @@ const loadPageMaxCount = (pageNum) =>{
 }
 
 const logOutEvent = () =>{
-    fetch(`/account/log-out`)
+    fetch(`/account/log-out?token=${localStorage.getItem("token")}`)
     .then((response) => {
         return response.json()
     })
@@ -69,18 +69,18 @@ const logOutEvent = () =>{
 }
 
 const showProfilePageEvent = () =>{
-    window.location.href = '/profilePage';
+    window.location.href = `/profilePage?token=${localStorage.getItem("token")}`;
 }
 
 const showPostPageEvent = (postnum)=>{
     return function(event) {
         localStorage.setItem("postNumTemp", postnum);
-        window.location.href = `/postPage`;
+        window.location.href = `/postPage?token=${localStorage.getItem("token")}`;
     }
 }
 
 const  writePostPage = ()=>{
-    window.location.href = `/writePostPage`;
+    window.location.href = `/writePostPage?token=${localStorage.getItem("token")}`;
 }
 
 

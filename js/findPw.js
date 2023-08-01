@@ -1,14 +1,14 @@
 const initBtnEvent = () =>{
-    document.getElementById("findBtn").onclick = findID
+    document.getElementById("findBtn").onclick = findPW
 }
 
-const findID = async() =>{
+const findPW = async() =>{
     const idInput = document.getElementById("idInput").value
     const nameInput = document.getElementById("nameInput").value
     const mailInput = document.getElementById("mailInput").value
-    const response = await fetch(`/account/certification?id=${idInput}&name=${nameInput}&mail=${mailInput}`);
+    const response = await fetch(`/account/certification?id=${idInput}&name=${nameInput}&mail=${mailInput}&token=${localStorage.getItem("token")}`);
     const result = await response.json();
-    console.log(result)
+    localStorage.setItem("token",result.token)
 
     if(result.success == true){
         document.getElementById("resultPw").innerText = "인증완료되었습니다"
@@ -47,11 +47,12 @@ const changePw = () =>{
             "body":JSON.stringify({
                 "newpw1": document.getElementById("pw1").value,
                 "newpw2": document.getElementById("pw2").value,
-                "token" : ?token=${localStorage.getItem("token")
+                "token" : localStorage.getItem("token")
             })
         }) 
         const result = await response.json();
         if(result.success == true){
+            localStorage.setItem("token",result.token)
             alert("변경완료")
             window.location.href = '/loginPage'
         }

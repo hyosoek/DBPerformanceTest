@@ -8,7 +8,8 @@ const loginEvent = () =>{
         },
         "body":JSON.stringify({ 
             "id" : document.getElementById("id_value").value,
-            "pw" : document.getElementById("pw_value").value
+            "pw" : document.getElementById("pw_value").value,
+            "token" :localStorage.getItem("token")
         })
     }) 
     .then((response) => {

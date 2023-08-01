@@ -5,7 +5,6 @@ const {Client} = require("pg")
 const db = require('../database.js');
 
 const logg = require("./log.js");
-const session = require("express-session");
 
 
 // 코멘트 페이지 개수 가져오기
@@ -112,7 +111,7 @@ router.post("/",async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.session.userNum
+            const usernum = await req.customData.userNum
             const sql = `INSERT INTO comment(detail,usernum,postnum) VALUES($1,$2,$3);`
             const value = [detail,usernum,postnum]
             const data = await client.query(sql,value)
@@ -148,7 +147,7 @@ router.put("/",async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = req.session.userNum
+            const usernum = await req.customData.userNum
             const sql = `UPDATE comment SET detail = $1 WHERE commentnum = $2 AND usernum = $3;`
             const value = [detail,commentnum,usernum]
             const data = await client.query(sql,value)
@@ -182,7 +181,7 @@ router.delete("/",async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = req.session.userNum
+            const usernum = req.customData.userNum
             const sql = `DELETE FROM comment WHERE commentnum = $1 AND usernum = $2;`
             const value = [commentnum,usernum]
             const data = await client.query(sql,value)

@@ -11,8 +11,9 @@ let commentPageMaxCount = 0
 //promise 쓰지 말아보자
 
 const loadPost = async() => {
-    const response = await fetch(`/post?postnum=${postnum}`);
+    const response = await fetch(`/post?postnum=${postnum}&token=${localStorage.getItem("token")}`);
     const result = await response.json();
+    localStorage.setItem("token",result.token)
 
     document.getElementById("postTitle").innerText = result.title
     document.getElementById("postDate").innerText = result.date
@@ -24,9 +25,10 @@ const loadPost = async() => {
 
 const loadComment = async() => {
     document.getElementById("commentList").innerHTML = null
-    const response = await fetch(`/comment?postnum=${postnum}&commentpagenum=${commentPageNum}`);
+    const response = await fetch(`/comment?postnum=${postnum}&commentpagenum=${commentPageNum}&token=${localStorage.getItem("token")}`);
     const result = await response.json();
 
+    localStorage.setItem("token",result.token)
     for(let i = 0; i < result.commentList.length;i++){
         document.getElementById("commentList")
         var postItem = document.createElement("input");
@@ -57,11 +59,12 @@ const loadAfterCommentPage = () =>{
 }
 
 const loadCommentMaxCount = () =>{
-    fetch(`/comment/count?postnum=${postnum}`)
+    fetch(`/comment/count?postnum=${postnum}&token=${localStorage.getItem("token")}`)
     .then((response) => {
         return response.json()
     })
     .then((result) => {
+        localStorage.setItem("token",result.token)
         console.log(result.pagecount)
         commentPageMaxCount = result.pagecount
     })
@@ -100,13 +103,15 @@ const fixPostEvent = async() =>{
         "body":JSON.stringify({
             "title" : document.getElementById("fixedTitle").value,
             "detail": document.getElementById("fixedDetail").value,
-            "postnum": postnum
+            "postnum": postnum,
+            "token":localStorage.getItem("token")
         })
     }) 
     .then((response) => {
         return response.json()
     })
     .then((result) => {
+        localStorage.setItem("token",result.token)
         console.log(result)
         if(result.success == true){
             alert("수정 완료")
@@ -130,13 +135,15 @@ const deletePostEvent = async() =>{
                 "Content-Type":"application/json"
             },
             "body":JSON.stringify({
-                "postnum" : postnum
+                "postnum" : postnum,
+                "token" : localStorage.getItem("token")
             })
         }) 
         .then((response) => {
             return response.json()
         })
         .then((result) => {
+            localStorage.setItem("token",result.token)
             console.log(result)
             if(result.success == true){
                 alert("삭제 완료")
@@ -157,11 +164,13 @@ const writeCommentEvent = async() =>{
         },
         "body":JSON.stringify({
             "detail": document.getElementById("detail").value,
-            "postnum": postnum
+            "postnum": postnum,
+            "token":localStorage.getItem("token")
         })
     }) 
     const result = await response.json();
     if(result.success == true){
+        localStorage.setItem("token",result.token)
         alert("작성완료")
         window.location.href = '/postPage'
     }
@@ -176,11 +185,13 @@ const deleteCommentEvent = async() =>{
             "Content-Type":"application/json"
         },
         "body":JSON.stringify({
-            "commentnum" : commentnumList[0]
+            "commentnum" : commentnumList[0],
+            "token":localStorage.getItem("token")
         })
     }) 
     const result = await response.json();
     if(result.success == true){
+        localStorage.setItem("token",result.token)
         alert("삭제완료")
         window.location.href = '/postPage'
     }

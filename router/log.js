@@ -2,6 +2,8 @@ const router = require("express").Router()
 const client = require("mongodb").MongoClient
 
 const inputCheck = require("../module/inputCheck.js");
+const verify = require("../module/verify.js")
+
 
 router.get("/",async(req,res,next) =>{
     const {newest,id,pagenum} = req.query;
@@ -10,6 +12,7 @@ router.get("/",async(req,res,next) =>{
         "message" :null,
         "data" :null,
         "maxpage": null,
+        "token":null
     }
     
     let conn = null //중요!
@@ -43,7 +46,7 @@ router.get("/",async(req,res,next) =>{
                 },
                 { $unwind: '$totalCount' },
                 { $project: { _id: 0, totalCount: '$totalCount.totalCount', data: 1 } },
-              ];
+            ];
 
             const dbResult = await conn.db('healthpartner').collection("log")
                 .aggregate(pipeline)
@@ -55,14 +58,17 @@ router.get("/",async(req,res,next) =>{
             result.maxpage = Math.ceil(count / process.env.logPerPage);
             result.data = data
             result.success = true
+
+            req.resData = result
+            await verify.publishToken(req,res)
+            result.token = await req.resData.token
         }
     }catch(err){
         console.log(`GET /log Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
         result.message = err.message
     }finally{
         if(conn) conn.close()
-        req.resData = result
-        next()
+        res.send(result)
     }
 })
 

@@ -3,11 +3,12 @@ let max = -1
 
 const initEvent = async() =>{
     document.getElementById("")
-    await fetch(`/log?newest=${1}&id=${""}&pagenum=${1}`)
+    await fetch(`/log?newest=${1}&id=${""}&pagenum=${1}&token=${localStorage.getItem("token")}`)
     .then((response) => {
         return response.json()
     })
     .then((result) => {
+        localStorage.setItem("token",result.token)
         loadLogEvent(result) //무조건 최신순 10개 들어옵니다.
         cur = 1
         setPage()
@@ -51,11 +52,12 @@ const loadNewPageEvent = async(pagenum) =>{
     } else{
         isNewest = 1
     }
-    await fetch(`/log?newest=${isNewest}&id=${document.getElementById("idInput").value}&pagenum=${pagenum}`)
+    await fetch(`/log?newest=${isNewest}&id=${document.getElementById("idInput").value}&pagenum=${pagenum}&token=${localStorage.getItem("token")}`)
     .then((response) => {
         return response.json()
     })
     .then((result) => {
+        localStorage.setItem("token",result.token)
         loadLogEvent(result) //무조건 최신순 10개 들어옵니다.
         setPage()
     })
@@ -64,7 +66,7 @@ const loadNewPageEvent = async(pagenum) =>{
 
 
 const logOutEvent = async() =>{
-    await fetch(`/account/log-out`)
+    await fetch(`/account/log-out?token=${localStorage.getItem("token")}`)
     .then((response) => {
         return response.json()
     })

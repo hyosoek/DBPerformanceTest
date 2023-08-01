@@ -5,7 +5,6 @@ const db = require('../database.js');
 const inputCheck = require("../module/inputCheck.js");
 
 const logg = require("./log.js");
-const session = require("express-session");
 
 // 프로필보기
 router.get("/",async(req,res,next)=>{
@@ -21,7 +20,8 @@ router.get("/",async(req,res,next)=>{
         try{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.session.userNum
+            const usernum = await req.customData.userNum
+            console.log(usernum)
             const sql = `SELECT name, mail, TO_CHAR(birth, 'YYYY-MM-DD') AS birth_date, contact
             FROM account
             WHERE usernum = $1;`
@@ -71,7 +71,7 @@ router.put("/",async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = req.session.userNum
+            const usernum = req.customData.userNum
             const sql = `UPDATE account SET mail = $1, birth = $2, contact = $3 WHERE usernum = $4;` // 중복은 unique로 잡아줌
             const values = [mail,birth,contact,usernum]
             const data = await client.query(sql,values)

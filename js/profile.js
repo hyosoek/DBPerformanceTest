@@ -1,8 +1,8 @@
 
 const initProfileData = async() =>{
-    const response = await fetch(`/profile`);
+    const response = await fetch(`/profile?token=${localStorage.getItem("token")}`);
     const result = await response.json();
-    console.log(result)
+    localStorage.setItem("token",result.token)
 
     document.getElementById("name").innerText = result.name
     document.getElementById("mail").innerText = result.mail
@@ -39,14 +39,15 @@ const profileFixEvent = () =>{
         "body":JSON.stringify({
             "mail": document.getElementById("fixedmail").value,
             "birth": document.getElementById("fixedbirth").value,
-            "contact":  document.getElementById("fixedcontact").value
+            "contact":  document.getElementById("fixedcontact").value,
+            "token" :localStorage.getItem("token")
         })
     }) 
     .then((response) => {
         return response.json()
     })
     .then((result) => {
-        console.log(result)
+        localStorage.setItem("token",result.token)
         if(result.success == true){
             alert("수정 완료")
             window.location.href = '/profilePage'
@@ -68,7 +69,8 @@ const withdrawalEvent = () =>{
                 "Content-Type":"application/json"
             },
             "body":JSON.stringify({
-                "pw": requirePw
+                "pw": requirePw,
+                "token":localStorage.getItem("token")
             })
         }) 
         .then((response) => {
@@ -77,6 +79,7 @@ const withdrawalEvent = () =>{
         .then((result) => {
             if(result.success == true){
                 alert("수정 완료")
+                localStorage.setItem("token",result.token)
                 window.location.href = '/loginPage'
             }
             else{

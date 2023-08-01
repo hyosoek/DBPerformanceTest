@@ -12,11 +12,13 @@ const writePostEvent = async() =>{
         },
         "body":JSON.stringify({
             "title": document.getElementById("title").value,
-            "detail": document.getElementById("detail").value
+            "detail": document.getElementById("detail").value,
+            "token":localStorage.getItem("token")
         })
     }) 
     const result = await response.json();
     if(result.success == true){
+        localStorage.setItem("token",result.token)
         alert("작성완료")
         window.location.href = '/mainPage'
     }

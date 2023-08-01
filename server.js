@@ -13,13 +13,6 @@ const sslOptions = {
     "cert": fs.readFileSync(path.join(__dirname,"ssl/cert.pem")),
     "passphrase" : "1234" 
 }
-const sessionOptions = {
-    secret: 'secret',
-    saveUninitialized: true,
-    cookie: { maxAge : 600000 },
-    rolling : true,
-    resave: true
-}
 
 //middleware with API
 const app = express()
@@ -44,10 +37,10 @@ const beforeApiMiddleware = (req,res,next) =>{
     verify.verifyWithToken(req,res,next)
 }
 
-const afterApiMiddleware = (req,res,next) =>{
-    verify.publishToken(req,res,next)
-    res.send(req.resData)
-    log.logging(req,res)
+const afterApiMiddleware = async(req,res,next) =>{
+    await verify.publishToken(req,res,next)
+    await res.send(req.resData)
+    await log.logging(req,res)
 }
 
 

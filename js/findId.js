@@ -5,9 +5,9 @@ const initBtnEvent = () =>{
 const findID = async() =>{
     const nameInput = document.getElementById("nameInput").value
     const mailInput = document.getElementById("mailInput").value
-    const response = await fetch(`/account/find-id?name=${nameInput}&mail=${mailInput}`);
+    const response = await fetch(`/account/find-id?name=${nameInput}&mail=${mailInput}&token=${localStorage.getItem("token")}`);
     const result = await response.json();
-    console.log(result)
+    localStorage.setItem("token",result.token)
 
     if(result.success == true){
         document.getElementById("resultId").innerText = "귀하의 아이디는 '" + result.id + "' 입니다"

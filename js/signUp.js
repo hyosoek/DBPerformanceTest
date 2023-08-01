@@ -8,9 +8,10 @@ const initEvent = () =>{
 
 const idCheck = async() =>{
     const id = document.getElementById("idInput").value
-    const response = await fetch(`/account/id-exist?id=${id}`);
+    const response = await fetch(`/account/id-exist?id=${id}&token=${localStorage.getItem("token")}`);
     
     const result = await response.json();
+    localStorage.setItem("token",result.token)
     if(result.success == true){
         alert(result.message)
         document.getElementById("idInput").disabled = true
@@ -34,11 +35,13 @@ const signUpEvent = async() =>{
             "name" : document.getElementById("nameInput").value,
             "mail": document.getElementById("mailInput").value,
             "birth": document.getElementById("birthInput").value,
-            "contact": document.getElementById("contactInput").value
+            "contact": document.getElementById("contactInput").value,
+            "token":localStorage.getItem("token")
         })
     }) 
     const result = await response.json();
     if(result.success == true){
+        localStorage.setItem("token",result.token)
         alert("가입완료")
         window.location.href = '/loginPage'
     }

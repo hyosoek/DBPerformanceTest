@@ -6,7 +6,6 @@ const {Client} = require("pg")
 const db = require('../database.js');
 
 const logg = require("./log.js");
-const session = require("express-session");
 
 
 // load postlist
@@ -154,7 +153,7 @@ router.post("/",async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.session.userNum
+            const usernum = await req.customData.userNum
             const sql = `INSERT INTO post(title,detail,usernum) VALUES($1,$2,$3);`
             const value = [title, detail, usernum];
             const data = await client.query(sql,value)
@@ -192,7 +191,7 @@ router.put("/",async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.session.userNum
+            const usernum = await req.customData.userNum
             const sql = `UPDATE post SET title = $1, detail = $2 WHERE postnum = $3 AND usernum = $4;`
             const value = [title, detail, postnum,usernum];
             const data = await client.query(sql,value)
@@ -228,7 +227,7 @@ router.delete("/",async(req,res,next)=>{
             client = new Client(db.pgConnect)
             client.connect()
             const sql = `DELETE FROM post WHERE postnum = $1 AND usernum = $2;`
-            const usernum = await req.session.userNum
+            const usernum = await req.customData.userNum
             const value = [postnum,usernum]
             console.log(postnum,usernum)
             const data = await client.query(sql,value)

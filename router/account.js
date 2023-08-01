@@ -36,6 +36,7 @@ router.post("/log-in",async(req,res,next)=>{
                 "userId" : row[0].id,
                 "isAdmin" : null
             } 
+            
             if(row[0].isadmin) req.customData.isAdmin = true
             else req.customData.isAdmin = false
 
@@ -219,14 +220,14 @@ router.get("/certification",async(req,res,next)=>{
     
             const row = data.rows
             if(row.length != 0) {
-                req.session.userNum = await row[0].usernum
-                req.session.userId = id
+                req.customData.userNum = await row[0].usernum
+                req.customData.userId = await id
                 result.success  = true
                 result.message = "귀하의 아이디를 찾았습니다."
             } else{
-                if (req.session.userNum || req.session.userId) { //세션정보가 존재하는 경우
-                    delete req.session.userNum
-                    delete req.session.userId
+                if (req.customData.userNum || req.customData.userId) { //세션정보가 존재하는 경우
+                    delete req.customData.userNum
+                    delete req.customData.userId
                 }
                 result.message = "존재하지 않는 정보입니다."
             }
@@ -236,7 +237,6 @@ router.get("/certification",async(req,res,next)=>{
         result.message = err.message
     } finally{
         if(client)client.end()
-
         req.resData = result
         next()
     }
@@ -256,7 +256,7 @@ router.put("/modify-pw",async(req,res,next)=>{
         else {
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.session.userNum
+            const usernum = await req.customData.userNum
             const sql = "UPDATE account SET pw = $1 WHERE usernum = $2;"
             const values = [newpw1,usernum]
             const data = await client.query(sql,values)
@@ -290,12 +290,12 @@ router.delete("/",async(req,res,next)=>{
         else {
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.session.userNum
+            const usernum = await req.customData.userNum
             const sql = "DELETE FROM account WHERE usernum = $1 AND pw = $2;"
             const values = [usernum,pw]
             const data = await client.query(sql,values)
 
-            req.session.destroy(function(err){})
+            req.customData.destroy(function(err){})
 
             result.success  = true
             result.message = "계정 삭제 완료"
