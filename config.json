@@ -11,5 +11,19 @@
       "postDetail": "^.{1,1024}$",
       "commentDetail": "^.{1,512}$",
       "ip": "^(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9][0-9]?)$"
-    }
-  }
+    },
+
+    "withoutTokenApi" : [
+        "POST /account/log-in",
+        "GET /account/log-out",
+        "GET /account/id-exist",
+        "POST /account",
+        "GET /account/find-id",
+        "GET /account/certification",
+        "PUT /account//modify-pw",
+        "GET /",
+        "GET /findIdPage",
+        "GET /findPwPage",
+        "GET /signUpPage"
+    ]
+}

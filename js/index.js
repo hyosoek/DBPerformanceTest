@@ -1,12 +1,4 @@
-const getEvent = () =>{
-    fetch("/account/16")
-    .then((response) => {
-        return response.json()
-    })
-    .then((result) => {
-        console.log(result)
-    })
-}
+
 const loginEvent = () =>{
     fetch("/account/log-in",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "POST",
@@ -24,7 +16,8 @@ const loginEvent = () =>{
     })
     .then((result) => {
         if(result.success){
-            window.location.href = '/mainPage';
+            localStorage.setItem("token", result.token);
+            window.location.href = `/mainPage?token=${localStorage.getItem("token")}`;
         }
         else{
             alert("아이디 또는 비밀번호가 올바르지 않습니다.")

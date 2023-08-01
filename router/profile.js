@@ -8,7 +8,7 @@ const logg = require("./log.js");
 const session = require("express-session");
 
 // 프로필보기
-router.get("/",async(req,res)=>{
+router.get("/",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
@@ -38,15 +38,6 @@ router.get("/",async(req,res)=>{
                 result.success  = true
                 result.message = "귀하의 프로필 정보입니다."
 
-                const tempJSON = {
-                    "id" : req.session.userId, 
-                    "ip" : req.ip,
-                    "api" : req.originalUrl,
-                    "rest" : "GET", //
-                    "request" : JSON.parse(JSON.stringify(req.query)), 
-                    "response" : result
-                }
-                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
             } else{
                 result.message = "존재하지 않는 정보입니다."
             }
@@ -56,12 +47,13 @@ router.get("/",async(req,res)=>{
             result.message = err.message
         }finally{
             if(client)client.end()
-            res.send(result)
+            req.resData = result
+            next()
         }
 })
 
 // 프로필수정
-router.put("/",async(req,res)=>{
+router.put("/",async(req,res,next)=>{
     const {mail,birth,contact} = req.body; // 받아옴
     const result = {
         "success" : false,
@@ -86,16 +78,6 @@ router.put("/",async(req,res)=>{
 
             result.success  = true
             result.message = "프로필정보 수정완료"
-
-            const tempJSON = {
-                "id" : req.session.userId, 
-                "ip" : req.ip,
-                "api" : req.originalUrl,
-                "rest" : "PUT", //
-                "request" : JSON.parse(JSON.stringify(req.body)), 
-                "response" : result
-            }
-            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }
         
     }catch(err){
@@ -103,7 +85,8 @@ router.put("/",async(req,res)=>{
         result.message = err.message
     }finally{
         if(client)client.end()
-        res.send(result) 
+        req.resData = result
+        next()
     }
 })
 

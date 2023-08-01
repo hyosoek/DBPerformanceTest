@@ -10,7 +10,7 @@ const session = require("express-session");
 
 
 // load postlist
-router.get("/list",async(req,res)=>{
+router.get("/list",async(req,res,next)=>{
     const {pagenum} = req.query; // 받아옴
     const result = {
         "success" : false,
@@ -39,16 +39,6 @@ router.get("/list",async(req,res)=>{
                 result.message = (pagenum) + "페이지 게시글 가져오기 성공"
                 row.forEach((elem)=>elem.date = dateParse.showTimeLapse(elem.date))
                 result.postList = row
-
-                const tempJSON = {
-                    "id" : req.session.userId, 
-                    "ip" : req.ip,
-                    "api" : req.originalUrl,
-                    "rest" : "GET", //
-                    "request" : JSON.parse(JSON.stringify(req.query)), 
-                    "response" : result
-                }
-                logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
             }
             else{
                 result.message == "게시글 존재하지 않습ㄴ디ㅏ."
@@ -59,12 +49,13 @@ router.get("/list",async(req,res)=>{
         result.message = err.message
     }finally{
         if(client) client.end()
-        res.send(result) 
+        req.resData = result
+        next()
     }
 })
 
 // countPage
-router.get("/count",async(req,res)=>{
+router.get("/count",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
@@ -83,16 +74,6 @@ router.get("/count",async(req,res)=>{
             result.success = true
             result.pagecount = parseInt(((row[0].count)-1)/postperpage) +1
             result.message = "총 게시글 페이지 수입니다."
-
-            const tempJSON = {
-                "id" : req.session.userId, 
-                "ip" : req.ip,
-                "api" : req.originalUrl,
-                "rest" : "GET", //
-                "request" : JSON.parse(JSON.stringify(req.query)), 
-                "response" : result
-            }
-            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }else{
             result.message = "게시글이 존재하지 않습니다."
         }
@@ -102,12 +83,13 @@ router.get("/count",async(req,res)=>{
         result.message = err.message
     }finally{
         if(client)client.end()
-        res.send(result)
+        req.resData = result
+        next()
     }
 })
 
 // getpost
-router.get("/",async(req,res)=>{
+router.get("/",async(req,res,next)=>{
     const {postnum} = req.query; // 받아옴
     const result = {
         "success" : false,
@@ -139,16 +121,6 @@ router.get("/",async(req,res)=>{
                     result.detail = row[0].detail
                     result.date = row[0].date
                     result.name = row[0].name
-
-                    const tempJSON = {
-                        "id" : req.session.userId, 
-                        "ip" : req.ip,
-                        "api" : req.originalUrl,
-                        "rest" : "GET", //
-                        "request" : JSON.parse(JSON.stringify(req.query)), 
-                        "response" : result
-                    }
-                    logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
             }else{
                 result.message = "존재하지 않는 글입니다."
             }
@@ -158,13 +130,14 @@ router.get("/",async(req,res)=>{
         result.message = err.message
     }finally{
         if(client)client.end()
-        res.send(result)
+        req.resData = result
+        next()
     }
     
 })
 
 // postWrite
-router.post("/",async(req,res)=>{
+router.post("/",async(req,res,next)=>{
     const {title,detail} = req.body;
     //auto date
     const result = {
@@ -188,29 +161,20 @@ router.post("/",async(req,res)=>{
     
             result.success = true
             result.message = "게시글 작성 성공" 
-
-            const tempJSON = {
-                "id" : req.session.userId, 
-                "ip" : req.ip,
-                "api" : req.originalUrl,
-                "rest" : "POST", //
-                "request" : JSON.parse(JSON.stringify(req.body)), 
-                "response" : result
-            }
-            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }            
     }catch(err){
         console.log("POST /post",err.message)
         result.message = err.message
     } finally{
         if(client)client.end()
-        res.send(result)
+        req.resData = result
+        next()
     }
     
 })
 
 // postFix
-router.put("/",async(req,res)=>{
+router.put("/",async(req,res,next)=>{
     const {title,detail,postnum} = req.body; // 역시나 예외처리할 때 유저 고유 식별번호를 확인합니다.
     const result = {
         "success" : false,
@@ -236,29 +200,21 @@ router.put("/",async(req,res)=>{
             result.success = true
             result.message = "게시글 수정 성공" 
 
-            const tempJSON = {
-                "id" : req.session.userId, 
-                "ip" : req.ip,
-                "api" : req.originalUrl,
-                "rest" : "PUT", //
-                "request" : JSON.parse(JSON.stringify(req.body)), 
-                "response" : result
-            }
-            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }                   
     }catch(err){
         console.log("PUT /post",err.message)
         result.message = err.message
     }finally{
         if(client) client.end()
-        res.send(result)
+        req.resData = result
+        next()
     }
     
     
 })
 
 // postDelete
-router.delete("/",async(req,res)=>{
+router.delete("/",async(req,res,next)=>{
     const {postnum} = req.body; //애초에 프론트엔드에서 예외처리를 해줘도 백엔드에서 한번더 점검해야 합니다.(세션을 통해서)    
     const result = {
         "success" : false,
@@ -280,22 +236,14 @@ router.delete("/",async(req,res)=>{
             result.success = true
             result.message = "게시글 삭제 성공"  
 
-            const tempJSON = {
-                "id" : req.session.userId, 
-                "ip" : req.ip,
-                "api" : req.originalUrl,
-                "rest" : "DELETE", //
-                "request" : JSON.parse(JSON.stringify(req.body)), 
-                "response" : result
-            }
-            logg.postLog(tempJSON.id,tempJSON.ip,tempJSON.api,tempJSON.rest,tempJSON.request,tempJSON.response)
         }                  
     }catch(err){
         console.log("/post",err.message)
         result.message = err.message
     }finally{
         if(client) client.end()
-        res.send(result)
+        req.resData = result
+        next()
     }
 })
 

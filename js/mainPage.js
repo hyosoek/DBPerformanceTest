@@ -4,7 +4,7 @@ let pageNum = 1
 let pageMaxCount = 0
 
 const loadPostPage = (pageNum) =>{
-    fetch(`/post/list?pagenum=${pageNum}`)
+    fetch(`/post/list?pagenum=${pageNum}&token=${localStorage.getItem("token")}`)
     .then((response) => {
         return response.json()
     })
@@ -43,7 +43,7 @@ const loadAfterPostPage = () =>{
 }
 
 const loadPageMaxCount = (pageNum) =>{
-    fetch(`/post/count`)
+    fetch(`/post/count?token=${localStorage.getItem("token")}`)
     .then((response) => {
         return response.json()
     })
@@ -61,7 +61,7 @@ const logOutEvent = () =>{
     })
     .then((result) => {
         try{
-            window.location.href = '/loginPage';
+            window.location.href = '/';
         } catch{
             console.log("예상못한 에러 발생")
         }

@@ -8,7 +8,8 @@ router.get("/",(req,res)=>{
 })
 
 router.get("/mainPage",async(req,res)=>{ // 세션체크해서 메인페이지가 관리자 페이지로 나뉨. 이건 프론트에서 다른 페이지 접근 불가(파일 위치의 영역)
-    if(req.session.isAdmin == true){
+    console.log()
+    if(req.customData.isAdmin == true){
         res.sendFile(path.join(__dirname, "../html/adminPage.html")) //..을 계산해줌
     } else{
         res.sendFile(path.join(__dirname, "../html/mainPage.html")) //..을 계산해줌

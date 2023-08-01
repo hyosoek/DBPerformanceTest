@@ -1,50 +1,89 @@
-const client = require("mongodb").MongoClient
-const inputCheck = require("../module/inputCheck.js");
+const jwt = require("jsonwebtoken")
+const Configure = require('@sub0709/json-config');
+const conf = Configure.load('config.json');
 
-const logging = async(req,res) =>{
-    let result = { ...req.resData };
-    let conn = null //중요!
+
+const verifyWithToken = async(req,res,next) =>{ // 토큰이 있는지 없는지만 확인
     try{
-        let userId = null
-        if(req.session.userId){userId = req.session.userId}
-        else {userId = ""}
-
-        let reqData = null
-        if(req.body){reqData = req.body}
-        else if(req.query){reqData = req.query}
-        else if(req.params){reqData = req.params}
-
-        const ipCheck = new inputCheck(req.ip)
-        const apiCheck = new inputCheck(req.originalUrl)
-        const restCheck = new inputCheck(req.method)
-        const requestCheck = new inputCheck(reqData)
-        const responseCheck = new inputCheck(result)
-        //respo
-
-        if (ipCheck.isEmpty().result != true) result.message = ipCheck.errMessage // isIP 넣어야할 듯
-        else if (apiCheck.isMinSize(1).isMaxSize(1023).isEmpty().result != true) result.message = apiCheck.errMessage
-        else if (restCheck.isMinSize(1).isMaxSize(10).isEmpty().result != true) result.message = restCheck.errMessage
-        else if (requestCheck.isEmpty().result != true) result.message = requestCheck.errMessage
-        else if (responseCheck.isEmpty().result != true) result.message = responseCheck.errMessage
-        else{
-            const currentTime = new Date();
-            conn  = await client.connect(process.env.mongoDb)//계정이 없어서 오로지 하나의 변수
-            const document = {
-                "id" : userId,
-                "ip" : req.ip,
-                "api" : req.originalUrl,
-                "rest" : req.method,
-                "request" : reqData,
-                "response" : result,
-                "time" : currentTime
+        const calledApi = `${req.method} ${req.originalUrl}`
+        console.log(removeQueryString(calledApi))
+        const nonVerifyApiList = conf.withoutTokenApi
+        if(nonVerifyApiList.includes(removeQueryString(calledApi))){
+            next() // 토큰인증이 필요없는 api
+        } else{
+            if(req.query.token){
+                req.customData = tokenToData(req.query.token)
+            } else if(req.body.token){
+                req.customData = tokenToData(req.body.token)
             }
-            await conn.db("healthpartner").collection("log").insertOne(document)
+            console.log(req.customData)
+            next()
+            // if(req.customData == null){//만료된 토큰 혹은 유효하지 않은 토큰이라면,
+            //     console.log("토큰만료")
+            // }else{
+            //     console.log("토큰인증성공")
+            //     next()
+            // }
         }
     }catch(err){
-        console.log(`POST log Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
-    }finally{
-        if(conn) conn.close()
+        console.log(`verifyToken Error : ${err.message}`)
     }
 }
 
-module.exports = {logging}
+const removeQueryString= (str) => {
+    const questionMarkIndex = str.indexOf('?');
+    if (questionMarkIndex !== -1) {
+      return str.substring(0, questionMarkIndex);
+    } else {
+      return str;
+    }
+}
+
+const tokenToData = async(token)=>{
+    try{
+        jwt.verify(token,process.env.randomNum)
+        const payload = token.split(".")[1]
+        const data = Buffer.from(payload,"base64")
+        return JSON.parse(data)
+    }catch (err){
+        console.log("토큰만료")
+    }
+        
+}
+
+const publishToken = async(req,res,next) =>{ //갱신과, 생성을 동시에 하나의 코드로
+    try{
+        if(req.customData){ //새로운 데이터가 있으면(로그인) 새 토큰 생성
+            const token = jwt.sign({
+                "usernum": req.customData.userNum //payload
+                ,"userid": req.customData.userId
+                ,"isadmin": req.customData.isAdmin
+            },
+            process.env.randomNum,
+            {
+                "issuer" : "hyoseok",
+                "expiresIn" : "1m"
+            })
+            req.resData.token = token
+            next()
+        } else if (req.token){ //새로운 데이터가 없고, 기존 토큰이 존재하는 경우
+            const token = req.token
+            jwt.verify(token,process.env.randomNum)
+            const payload = token.split(".")[1]
+            const data = Buffer.from(payload,"base64")
+
+            const newToken = jwt.sign(JSON.parse(data),
+            process.env.randomNum,
+            {
+                "issuer" : "hyoseok",
+                "expiresIn" : "1m"
+            })
+            req.resData.token = newToken
+            next()
+        }
+    }catch(err){
+        console.log(`publishToken Error : ${err.message}`)
+    }
+}
+
+module.exports = {verifyWithToken,publishToken}

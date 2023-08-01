@@ -4,15 +4,14 @@ const inputCheck = require("../module/inputCheck.js");
 const {Client} = require("pg")
 const db = require('../database.js');
 
-const logg = require("./log.js");
-const session = require("express-session");
 
 // 로그인
 router.post("/log-in",async(req,res,next)=>{
     const {id,pw} = req.body;
     const result = {
         "success" : false,
-        "message" : ""
+        "message" : "",
+        "token" : null
     }
     let client = null;
     try{
@@ -32,10 +31,14 @@ router.post("/log-in",async(req,res,next)=>{
             result.success  = true
             result.message = "로그인 성공"
 
-            req.session.userNum = await row[0].usernum
-            req.session.userId = await row[0].id
-            if(row[0].isadmin) req.session.isAdmin = true
-            else req.session.isAdmin = false
+            req.customData= { 
+                "userNum" : row[0].usernum,
+                "userId" : row[0].id,
+                "isAdmin" : null
+            } 
+            if(row[0].isadmin) req.customData.isAdmin = true
+            else req.customData.isAdmin = false
+
         } else{
             result.message = "해당하는 회원정보가 없습니다."
         }
@@ -45,8 +48,6 @@ router.post("/log-in",async(req,res,next)=>{
         result.message = err.message
     } finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result
         next()
     }
@@ -59,13 +60,12 @@ router.get("/log-out",async(req,res,next)=>{
         "message" : ""
     }
     try{
-        req.session.destroy(function(err){})
+        delete req.customData;
         result.success = true
     }catch(err){
         console.log("POST /account/log-out", err.message)
         result.message = err.message
     } finally{
-        res.send(result)
         req.resData = result
         next() // 세션이 아닌 다른 접근...?
     }    
@@ -103,8 +103,6 @@ router.get("/id-exist",async(req,res,next)=>{ //아이디 중복체크
         result.message = err.message
     }finally{
         if(client) client.end() 
-        res.send(result)
-        
         req.resData = result
         next()
     }
@@ -147,7 +145,6 @@ router.post("/",async(req,res,next)=>{
         result.message = err.message
     }finally{
         if(client) client.end() 
-        res.send(result)
         
         req.resData = result
         next()
@@ -155,7 +152,6 @@ router.post("/",async(req,res,next)=>{
 })
 // 아이디 찾기
 router.get("/find-id",async(req,res,next)=>{
-    console.log(req)
     const {name,mail} = req.query; // 받아옴
     const result = {
         "success" : false,
@@ -182,7 +178,6 @@ router.get("/find-id",async(req,res,next)=>{
                 result.id = row[0].id
                 result.success  = true
                 result.message = "귀하의 아이디를 찾았습니다."
-
             } else{
                 result.message = "존재하지 않는 정보입니다."
             }
@@ -192,7 +187,6 @@ router.get("/find-id",async(req,res,next)=>{
         result.message = err.message
     }finally {
         if(client)client.end()
-        res.send(result)
 
         req.resData = result
         next()
@@ -242,7 +236,6 @@ router.get("/certification",async(req,res,next)=>{
         result.message = err.message
     } finally{
         if(client)client.end()
-        res.send(result)
 
         req.resData = result
         next()
@@ -276,7 +269,6 @@ router.put("/modify-pw",async(req,res,next)=>{
         result.message = err.message
     }finally{
         if(client)client.end()
-        res.send(result)
 
         req.resData = result
         next()
@@ -313,7 +305,6 @@ router.delete("/",async(req,res,next)=>{
         result.message = err.message
     } finally{
         if(client) client.end()
-        res.send(result)
 
         req.resData = result
         next()

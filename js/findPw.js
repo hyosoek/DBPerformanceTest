@@ -46,7 +46,8 @@ const changePw = () =>{
             },
             "body":JSON.stringify({
                 "newpw1": document.getElementById("pw1").value,
-                "newpw2": document.getElementById("pw2").value
+                "newpw2": document.getElementById("pw2").value,
+                "token" : ?token=${localStorage.getItem("token")
             })
         }) 
         const result = await response.json();

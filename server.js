@@ -5,6 +5,8 @@ const path = require("path")
 const https = require("https")
 const fs = require("fs") 
 const log = require("./module/logging.js");
+const verify = require("./module/verify.js")
+
 
 const sslOptions = {
     "key":fs.readFileSync(path.join(__dirname,"ssl/key.pem")),
@@ -38,12 +40,21 @@ app.get("*",(req,res,next) =>{ //next는 자동으로 넘어가줌
     }
 })
 
-const loggingMiddleware = (req, res) => { //정의
+const beforeApiMiddleware = (req,res,next) =>{
+    verify.verifyWithToken(req,res,next)
+}
+
+const afterApiMiddleware = (req,res,next) =>{
+    verify.publishToken(req,res,next)
+    res.send(req.resData)
     log.logging(req,res)
-};
+}
+
 
 
 //API
+app.use(beforeApiMiddleware); 
+
 const accountApi = require("./router/account")
 app.use("/account", accountApi)
 
@@ -62,7 +73,9 @@ app.use('/log', logRouterApi);
 const pages = require("./router/pages")
 app.use("/",pages) 
 
-app.use(loggingMiddleware); //api 호출 이후 next를 사용해주면 됨
+app.use(afterApiMiddleware)
+
+
 
 
 //서버 시작

@@ -3,7 +3,7 @@ const client = require("mongodb").MongoClient
 
 const inputCheck = require("../module/inputCheck.js");
 
-router.get("/",async(req,res) =>{
+router.get("/",async(req,res,next) =>{
     const {newest,id,pagenum} = req.query;
     const result = {
         "success" :false,
@@ -61,7 +61,8 @@ router.get("/",async(req,res) =>{
         result.message = err.message
     }finally{
         if(conn) conn.close()
-        res.send(result)
+        req.resData = result
+        next()
     }
 })
 

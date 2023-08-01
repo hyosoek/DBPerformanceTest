@@ -44,8 +44,6 @@ router.get("/count",async(req,res,next)=>{
         result.message = err.message
     }finally{
         if(client)client.end()
-        res.send(result)
-
         req.resData = result
         next()
     }
@@ -92,8 +90,6 @@ router.get("/",async(req,res,next)=>{
         result.message = err.message
     }finally{
         if(client)client.end()
-        res.send(result)
-
         req.resData = result
         next()
     }
@@ -130,8 +126,6 @@ router.post("/",async(req,res,next)=>{
         result.message = err.message
     }finally{
         if(client)client.end()
-        res.send(result)
-
         req.resData = result
         next()
     }
@@ -168,8 +162,6 @@ router.put("/",async(req,res,next)=>{
         result.message = err.message
     }finally{
         if(client)client.end()
-        res.send(result)
-
         req.resData = result
         next()
     }
@@ -205,8 +197,6 @@ router.delete("/",async(req,res,next)=>{
         result.message = err.message
     }finally{
         if(client)client.end()
-        res.send(result)
-
         req.resData = result
         next()
     }
