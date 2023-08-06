@@ -58,11 +58,17 @@ router.get("/count",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
-        "pagecount":null
+        "pagecount":null,
+        "auth":false
     }
     let client = null
     try{
-        const postperpage = process.env.postPerPage // 환경변수
+        if(req.decoded.isAdmin == true || !req.decoded){ // 관리자계정이거나, 아예 존재하지 않을때?
+            result.message = "Token error"
+            return
+        }
+        result.auth = true
+        
         client = new Client(db.pgConnect)
         client.connect()
         const sql = "SELECT COUNT(*) AS count FROM post;"
@@ -71,17 +77,18 @@ router.get("/count",async(req,res,next)=>{
         const row = data.rows
         if(row.length != 0){
             result.success = true
-            result.pagecount = parseInt(((row[0].count)-1)/postperpage) +1
+            result.pagecount = parseInt(((row[0].count)-1)/process.env.postPerPage) +1
             result.message = "총 게시글 페이지 수입니다."
         }else{
             result.message = "게시글이 존재하지 않습니다."
         }
-        
     }catch(err){
         console.log("GET /post/count",err.message)
         result.message = err.message
     }finally{
-        if(client)client.end()
+        if(client) client.end()
+        res.send(result)
+
         req.resData = result
         next()
     }

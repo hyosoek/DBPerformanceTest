@@ -12,16 +12,21 @@ router.get("/",async(req,res,next) =>{
         "message" :null,
         "data" :null,
         "maxpage": null,
-        "token":null
+        "auth": false
     }
     
     let conn = null //중요!
     try{
+        if(req.decoded.isAdmin == false || !req.decoded){ // 관리자계정이거나, 아예 존재하지 않을때?
+            result.message = "Token error"
+            return
+        }
+        result.auth = true
+        
         const newestCheck = new inputCheck(newest)
         const idCheck = new inputCheck(id)
         const pagenumCheck = new inputCheck(pagenum)
 
-        // if (newestCheck.isEmpty().result != true) result.message = newestCheck.errMessage
         if (idCheck.isNull().isUndefined().result != true) result.message = idCheck.errMessage // isIP 넣어야할 듯
         else if (pagenumCheck.isEmpty().result != true) result.message = pagenumCheck.errMessage
         else{
@@ -50,7 +55,7 @@ router.get("/",async(req,res,next) =>{
 
             const dbResult = await conn.db('healthpartner').collection("log")
                 .aggregate(pipeline)
-                .toArray();
+                .toArray(); //
 
             const data = dbResult.length > 0 ? dbResult[0].data : [];
             const count = dbResult.length > 0 ? dbResult[0].totalCount : 0;

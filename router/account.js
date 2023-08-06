@@ -3,6 +3,8 @@ const inputCheck = require("../module/inputCheck.js");
 
 const {Client} = require("pg")
 const db = require('../database.js');
+const verify = require("../module/verify.js")
+
 
 
 // 로그인
@@ -11,7 +13,8 @@ router.post("/log-in",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
-        "token" : null
+        "token" : null,
+        "isadmin": false
     }
     let client = null;
     try{
@@ -30,16 +33,8 @@ router.post("/log-in",async(req,res,next)=>{
         if(row.length != 0) {
             result.success  = true
             result.message = "로그인 성공"
-
-            req.customData= { 
-                "userNum" : row[0].usernum,
-                "userId" : row[0].id,
-                "isAdmin" : null
-            } 
-            
-            if(row[0].isadmin) req.customData.isAdmin = true
-            else req.customData.isAdmin = false
-
+            result.token = await verify.publishToken(row[0])
+            result.isadmin = row[0].isadmin
         } else{
             result.message = "해당하는 회원정보가 없습니다."
         }
@@ -49,7 +44,9 @@ router.post("/log-in",async(req,res,next)=>{
         result.message = err.message
     } finally{
         if(client) client.end()
-        req.resData = result
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
        
@@ -58,10 +55,11 @@ router.post("/log-in",async(req,res,next)=>{
 router.get("/log-out",async(req,res,next)=>{
     const result = {
         "success" : false,
-        "message" : ""
+        "message" : "",
+        "token" : null
     }
     try{
-        delete req.customData;
+        // 토큰 정지 코드
         result.success = true
     }catch(err){
         console.log("POST /account/log-out", err.message)

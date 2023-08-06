@@ -16,13 +16,8 @@ const sslOptions = {
 
 //middleware with API
 const app = express()
-
-app.use(session(sessionOptions)); // 굳이 env 저장할 필요는 없는 듯
-
 app.use(express.json())
-
-app.use("/js",express.static(__dirname + "/js"))
-
+app.use(express.static("public"))
 app.get("*",(req,res,next) =>{ //next는 자동으로 넘어가줌
     const protocol = req.protocol //프로토콜을 가져올 수 있음
     if(protocol == "https"){
@@ -33,20 +28,12 @@ app.get("*",(req,res,next) =>{ //next는 자동으로 넘어가줌
     }
 })
 
-const beforeApiMiddleware = (req,res,next) =>{
-    verify.verifyWithToken(req,res,next)
-}
-
-const afterApiMiddleware = async(req,res,next) =>{
-    await verify.publishToken(req,res,next)
-    await res.send(req.resData)
-    await log.logging(req,res)
-}
-
-
 
 //API
-app.use(beforeApiMiddleware); 
+const pages = require("./router/pages")
+app.use("/",pages) 
+
+app.use(verify.verifyWithToken); 
 
 const accountApi = require("./router/account")
 app.use("/account", accountApi)
@@ -63,12 +50,7 @@ app.use("/comment",commentApi)
 const logRouterApi = require("./router/log")
 app.use('/log', logRouterApi);
 
-const pages = require("./router/pages")
-app.use("/",pages) 
-
-app.use(afterApiMiddleware)
-
-
+app.use(log.logging)
 
 
 //서버 시작

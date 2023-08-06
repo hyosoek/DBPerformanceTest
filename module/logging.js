@@ -6,14 +6,14 @@ const logging = async(req,res) =>{
     let conn = null //중요!
     try{
         let userId = null
-        if(req.session.userId){userId = req.session.userId}
+        if(req.decoded){userId = req.decoded.userId}
         else {userId = ""}
 
         let reqData = null
         if(req.body){reqData = req.body}
         else if(req.query){reqData = req.query}
         else if(req.params){reqData = req.params}
-
+        
         const ipCheck = new inputCheck(req.ip)
         const apiCheck = new inputCheck(req.originalUrl)
         const restCheck = new inputCheck(req.method)
