@@ -3,17 +3,41 @@
 const postnum = localStorage.getItem("postNumTemp")
 const commentnumList = []
 
-console.log(postnum)
 let commentPageNum = 1
 let commentPageMaxCount = 0
 //전역변수는 프론트엔드가 알아서 해줄 것임.
 
 //promise 쓰지 말아보자
 
+window.onload =() =>{
+    loadCommentMaxCount() //둘다 처음에 사용되지만, loadpost는 재사용되므로,
+    loadPost()
+}
+
+const loadCommentMaxCount = () =>{
+    fetch(`/comment/count?postnum=${postnum}`,{
+        headers: {
+            'Authorization': getCookie("token")
+        }
+    })
+    .then((response) => {
+        return response.json()
+    })
+    .then((result) => {
+        commentPageMaxCount = result.pagecount
+    })
+}
+
 const loadPost = async() => {
-    const response = await fetch(`/post?postnum=${postnum}&token=${localStorage.getItem("token")}`);
+    const response = await fetch(`/post?postnum=${postnum}`,{
+        headers: {
+            'Authorization': getCookie("token")
+        }
+    });
     const result = await response.json();
-    localStorage.setItem("token",result.token)
+    if(result.auth == false){ // 강제 리디렉션
+        window.location.href = `/`;
+    }
 
     document.getElementById("postTitle").innerText = result.title
     document.getElementById("postDate").innerText = result.date
@@ -25,10 +49,13 @@ const loadPost = async() => {
 
 const loadComment = async() => {
     document.getElementById("commentList").innerHTML = null
-    const response = await fetch(`/comment?postnum=${postnum}&commentpagenum=${commentPageNum}&token=${localStorage.getItem("token")}`);
+    const response = await fetch(`/comment?postnum=${postnum}&commentpagenum=${commentPageNum}`,{
+        headers: {
+            'Authorization': getCookie("token")
+        }
+    });
     const result = await response.json();
 
-    localStorage.setItem("token",result.token)
     for(let i = 0; i < result.commentList.length;i++){
         document.getElementById("commentList")
         var postItem = document.createElement("input");
@@ -58,17 +85,7 @@ const loadAfterCommentPage = () =>{
     }
 }
 
-const loadCommentMaxCount = () =>{
-    fetch(`/comment/count?postnum=${postnum}&token=${localStorage.getItem("token")}`)
-    .then((response) => {
-        return response.json()
-    })
-    .then((result) => {
-        localStorage.setItem("token",result.token)
-        console.log(result.pagecount)
-        commentPageMaxCount = result.pagecount
-    })
-}
+
 
 const fixPostInitEvent = async() =>{
     
@@ -98,20 +115,20 @@ const fixPostEvent = async() =>{
     fetch("/post",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "PUT",
         "headers":{
-            "Content-Type":"application/json"
+            "Content-Type":"application/json",
+            'Authorization': getCookie("token")
+               
         },
         "body":JSON.stringify({
             "title" : document.getElementById("fixedTitle").value,
             "detail": document.getElementById("fixedDetail").value,
-            "postnum": postnum,
-            "token":localStorage.getItem("token")
+            "postnum": postnum
         })
     }) 
     .then((response) => {
         return response.json()
     })
     .then((result) => {
-        localStorage.setItem("token",result.token)
         console.log(result)
         if(result.success == true){
             alert("수정 완료")
@@ -132,18 +149,18 @@ const deletePostEvent = async() =>{
         fetch("/post",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
             "method" : "DELETE",
             "headers":{
-                "Content-Type":"application/json"
+                "Content-Type":"application/json",
+                'Authorization': getCookie("token")
+                    
             },
             "body":JSON.stringify({
-                "postnum" : postnum,
-                "token" : localStorage.getItem("token")
+                "postnum" : postnum
             })
         }) 
         .then((response) => {
             return response.json()
         })
         .then((result) => {
-            localStorage.setItem("token",result.token)
             console.log(result)
             if(result.success == true){
                 alert("삭제 완료")
@@ -160,17 +177,16 @@ const writeCommentEvent = async() =>{
     const response = await fetch("/comment",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "POST",
         "headers":{
-            "Content-Type":"application/json"
+            "Content-Type":"application/json",
+            'Authorization': getCookie("token") 
         },
         "body":JSON.stringify({
             "detail": document.getElementById("detail").value,
-            "postnum": postnum,
-            "token":localStorage.getItem("token")
+            "postnum": postnum
         })
     }) 
     const result = await response.json();
     if(result.success == true){
-        localStorage.setItem("token",result.token)
         alert("작성완료")
         window.location.href = '/postPage'
     }
@@ -182,16 +198,15 @@ const deleteCommentEvent = async() =>{
     const response = await fetch("/comment",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "DELETE",
         "headers":{
-            "Content-Type":"application/json"
+            "Content-Type":"application/json",
+            'Authorization': getCookie("token")
         },
         "body":JSON.stringify({
-            "commentnum" : commentnumList[0],
-            "token":localStorage.getItem("token")
+            "commentnum" : commentnumList[0]
         })
     }) 
     const result = await response.json();
     if(result.success == true){
-        localStorage.setItem("token",result.token)
         alert("삭제완료")
         window.location.href = '/postPage'
     }
@@ -199,6 +214,3 @@ const deleteCommentEvent = async() =>{
         alert(result.message)
     }
 }
-
-loadCommentMaxCount() //둘다 처음에 사용되지만, loadpost는 재사용되므로,
-loadPost()

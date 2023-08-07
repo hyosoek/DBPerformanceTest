@@ -3,6 +3,8 @@ const client = require("mongodb").MongoClient
 
 const inputCheck = require("../module/inputCheck.js");
 const verify = require("../module/verify.js")
+const searchHistory = require("../module/searchHistory.js")
+const redis =require("redis").createClient()
 
 
 router.get("/",async(req,res,next) =>{
@@ -17,12 +19,9 @@ router.get("/",async(req,res,next) =>{
     
     let conn = null //중요!
     try{
-        if(req.decoded.isAdmin == false || !req.decoded){ // 관리자계정이거나, 아예 존재하지 않을때?
-            result.message = "Token error"
-            return
-        }
+        if(req.decoded.isAdmin == false || !req.decoded) throw new Error('authorization Fail');
         result.auth = true
-        
+
         const newestCheck = new inputCheck(newest)
         const idCheck = new inputCheck(id)
         const pagenumCheck = new inputCheck(pagenum)
@@ -64,9 +63,10 @@ router.get("/",async(req,res,next) =>{
             result.data = data
             result.success = true
 
+            if(id){
+                await searchHistory.addSearchHistory(id)
+            }
             req.resData = result
-            await verify.publishToken(req,res)
-            result.token = await req.resData.token
         }
     }catch(err){
         console.log(`GET /log Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
@@ -76,6 +76,61 @@ router.get("/",async(req,res,next) =>{
         res.send(result)
     }
 })
+
+router.get("/search-history",async(req,res,next) =>{
+    const result = {
+        "success" :false,
+        "message" :null,
+        "data" :null
+    }
+    
+    let conn = null //중요!
+    try{
+        if(req.decoded.isAdmin == false || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+        
+        await redis.connect()
+        const redislist = await redis.zRange('searchHistory', 0, -1)
+       
+        result.success = true
+        result.message = "최근검색목록"
+        result.data = redislist
+
+    }catch(err){
+        console.log(`GET /log/search-history Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
+        result.message = err.message
+    }finally{
+        redis.disconnect()
+        res.send(result)
+    }
+})
+
+router.delete("/search-history",async(req,res,next) =>{
+    const result = {
+        "success" :false,
+        "message" :null
+    }
+    
+    let conn = null //중요!
+    try{
+        if(req.decoded.isAdmin == false || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+        
+        await redis.connect()
+        await redis.ZREMRANGEBYRANK('searchHistory', 0, -1)
+       
+        result.success = true
+        result.message = "삭제 완료"
+
+    }catch(err){
+        console.log(`DELETE /log/search-history Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
+        result.message = err.message
+    }finally{
+        redis.disconnect()
+        res.send(result)
+    }
+})
+
 
 
 module.exports = router

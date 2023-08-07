@@ -1,6 +1,10 @@
 
-const initProfileData = async() =>{
-    const response = await fetch(`/profile?token=${localStorage.getItem("token")}`);
+window.onload = async() =>{
+    const response = await fetch(`/profile`,{
+        headers: {
+            'Authorization': getCookie("token")
+        }
+    })
     const result = await response.json();
     localStorage.setItem("token",result.token)
 
@@ -34,7 +38,8 @@ const profileFixEvent = () =>{
     fetch("/profile",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "PUT",
         "headers":{
-            "Content-Type":"application/json"
+            "Content-Type":"application/json",
+            'Authorization': getCookie("token")
         },
         "body":JSON.stringify({
             "mail": document.getElementById("fixedmail").value,
@@ -63,14 +68,14 @@ const profileFixEvent = () =>{
 const withdrawalEvent = () =>{
     const requirePw = prompt("정말로 삭제하시려면 비밀번호를 입력해주세요")
     if(requirePw != null){
-        fetch("/account",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
+        fetch("/account",{
             "method" : "DELETE",
             "headers":{
-                "Content-Type":"application/json"
+                "Content-Type":"application/json",
+                'Authorization': getCookie("token")
             },
             "body":JSON.stringify({
-                "pw": requirePw,
-                "token":localStorage.getItem("token")
+                "pw": requirePw
             })
         }) 
         .then((response) => {
@@ -78,9 +83,8 @@ const withdrawalEvent = () =>{
         })
         .then((result) => {
             if(result.success == true){
-                alert("수정 완료")
-                localStorage.setItem("token",result.token)
-                window.location.href = '/loginPage'
+                alert("탈퇴 완료")
+                window.location.href = '/'
             }
             else{
                 alert(result.message)
@@ -89,4 +93,3 @@ const withdrawalEvent = () =>{
     }
 }
 
-initProfileData()

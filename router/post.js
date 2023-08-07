@@ -14,12 +14,15 @@ router.get("/list",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
-        "postList" : []
+        "postList" : [],
+        "auth":null
     }
     let client = null
     try{
-        const numCheck = new inputCheck(pagenum)
+        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
 
+        const numCheck = new inputCheck(pagenum)
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
         else{
             const postcount = process.env.postPerPage // 환경변수
@@ -40,7 +43,7 @@ router.get("/list",async(req,res,next)=>{
                 result.postList = row
             }
             else{
-                result.message == "게시글 존재하지 않습ㄴ디ㅏ."
+                result.message == "게시글 존재하지 않습니다."
             }
         }
     }catch(err){
@@ -48,7 +51,9 @@ router.get("/list",async(req,res,next)=>{
         result.message = err.message
     }finally{
         if(client) client.end()
-        req.resData = result
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
 })
@@ -63,10 +68,7 @@ router.get("/count",async(req,res,next)=>{
     }
     let client = null
     try{
-        if(req.decoded.isAdmin == true || !req.decoded){ // 관리자계정이거나, 아예 존재하지 않을때?
-            result.message = "Token error"
-            return
-        }
+        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
         result.auth = true
         
         client = new Client(db.pgConnect)
@@ -103,12 +105,15 @@ router.get("/",async(req,res,next)=>{
         "title" : "",
         "detail": "",
         "date" : "",
-        "name" : ""
+        "name" : "",
+        "auth" : false
     }
     let client = null
     try{
-        const numCheck = new inputCheck(postnum)
+        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
 
+        const numCheck = new inputCheck(postnum)
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
         else{
             client = new Client(db.pgConnect)
@@ -135,8 +140,10 @@ router.get("/",async(req,res,next)=>{
         console.log("GET /post",err.message)
         result.message = err.message
     }finally{
-        if(client)client.end()
-        req.resData = result
+        if(client) client.end()
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
     
@@ -149,9 +156,13 @@ router.post("/",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
+        "auth" : false
     }
     let client = null
     try{
+        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+
         const titleCheck = new inputCheck(title)
         const detailCheck = new inputCheck(detail)
 
@@ -160,7 +171,7 @@ router.post("/",async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.customData.userNum
+            const usernum = await req.decoded.userNum
             const sql = `INSERT INTO post(title,detail,usernum) VALUES($1,$2,$3);`
             const value = [title, detail, usernum];
             const data = await client.query(sql,value)
@@ -172,8 +183,10 @@ router.post("/",async(req,res,next)=>{
         console.log("POST /post",err.message)
         result.message = err.message
     } finally{
-        if(client)client.end()
-        req.resData = result
+        if(client) client.end()
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
     
@@ -185,9 +198,13 @@ router.put("/",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
+        "auth" : false
     }
     let client = null
     try{
+        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+
         const titleCheck = new inputCheck(title)
         const detailCheck = new inputCheck(detail)
         const numCheck2 = new inputCheck(postnum)
@@ -198,7 +215,7 @@ router.put("/",async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.customData.userNum
+            const usernum = await req.decoded.userNum
             const sql = `UPDATE post SET title = $1, detail = $2 WHERE postnum = $3 AND usernum = $4;`
             const value = [title, detail, postnum,usernum];
             const data = await client.query(sql,value)
@@ -212,7 +229,9 @@ router.put("/",async(req,res,next)=>{
         result.message = err.message
     }finally{
         if(client) client.end()
-        req.resData = result
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
     
@@ -224,17 +243,21 @@ router.delete("/",async(req,res,next)=>{
     const {postnum} = req.body; //애초에 프론트엔드에서 예외처리를 해줘도 백엔드에서 한번더 점검해야 합니다.(세션을 통해서)    
     const result = {
         "success" : false,
-        "message" : ""
+        "message" : "",
+        "auth" : false
     }
     var client = null
     try{
+        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+
         const numCheck = new inputCheck(postnum)
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
         else{
             client = new Client(db.pgConnect)
             client.connect()
             const sql = `DELETE FROM post WHERE postnum = $1 AND usernum = $2;`
-            const usernum = await req.customData.userNum
+            const usernum = await req.decoded.userNum
             const value = [postnum,usernum]
             console.log(postnum,usernum)
             const data = await client.query(sql,value)
@@ -248,7 +271,9 @@ router.delete("/",async(req,res,next)=>{
         result.message = err.message
     }finally{
         if(client) client.end()
-        req.resData = result
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
 })

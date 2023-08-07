@@ -1,5 +1,3 @@
-const ck = require("./cookie.js")
-
 window.onload = () =>{
     document.getElementById("logInBtn").onclick = loginEvent
     document.getElementById("findIdBtn").onclick = showFindIdPageEvent
@@ -24,7 +22,7 @@ const loginEvent = () =>{
     })
     .then((result) => {
         if(result.success){
-            ck.setCookie("token",result.token,1)
+            setCookie("token",result.token)
             if(result.isadmin == false){
                 window.location.href = `/mainPage`;
             } else if(result.isadmin == true){

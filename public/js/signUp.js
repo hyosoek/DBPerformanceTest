@@ -1,5 +1,5 @@
 
-const initEvent = () =>{
+window.onload = () =>{
     const signUpBtn = document.getElementById("signUpBtn")
     signUpBtn.disabled = true
     const idCheckBtn = document.getElementById("idCheckBtn")
@@ -41,13 +41,10 @@ const signUpEvent = async() =>{
     }) 
     const result = await response.json();
     if(result.success == true){
-        localStorage.setItem("token",result.token)
         alert("가입완료")
-        window.location.href = '/loginPage'
+        window.location.href = '/'
     }
     else{
         alert(result.message)
     }
 }
-
-initEvent()

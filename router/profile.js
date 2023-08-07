@@ -14,14 +14,17 @@ router.get("/",async(req,res,next)=>{
         "name" : "",
         "mail": "",
         "birth": "",
-        "contact": ""
+        "contact": "",
+        "auth":false
     }
     let client = null
         try{
+            if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
+            result.auth = true
+
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.customData.userNum
-            console.log(usernum)
+            const usernum = await req.decoded.userNum
             const sql = `SELECT name, mail, TO_CHAR(birth, 'YYYY-MM-DD') AS birth_date, contact
             FROM account
             WHERE usernum = $1;`
@@ -37,7 +40,6 @@ router.get("/",async(req,res,next)=>{
                 result.contact = row[0].contact
                 result.success  = true
                 result.message = "귀하의 프로필 정보입니다."
-
             } else{
                 result.message = "존재하지 않는 정보입니다."
             }
@@ -46,8 +48,10 @@ router.get("/",async(req,res,next)=>{
             console.log("GET /profile",err.message)
             result.message = err.message
         }finally{
-            if(client)client.end()
-            req.resData = result
+            if(client) client.end()
+            res.send(result)
+    
+            req.resData = result //for logging
             next()
         }
 })
@@ -57,10 +61,14 @@ router.put("/",async(req,res,next)=>{
     const {mail,birth,contact} = req.body; // 받아옴
     const result = {
         "success" : false,
-        "message" : ""
+        "message" : "",
+        "auth" : false
     }
     let client = null
     try{
+        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+
         const mailCheck = new inputCheck(mail)
         const birthCheck = new inputCheck(birth)
         const contactCheck = new inputCheck(contact)
@@ -71,7 +79,7 @@ router.put("/",async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = req.customData.userNum
+            const usernum = req.decoded.userNum
             const sql = `UPDATE account SET mail = $1, birth = $2, contact = $3 WHERE usernum = $4;` // 중복은 unique로 잡아줌
             const values = [mail,birth,contact,usernum]
             const data = await client.query(sql,values)
@@ -84,8 +92,10 @@ router.put("/",async(req,res,next)=>{
         console.log("PUT /profile",err.message)
         result.message = err.message
     }finally{
-        if(client)client.end()
-        req.resData = result
+        if(client) client.end()
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
 })

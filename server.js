@@ -1,11 +1,11 @@
 //environment setting
 const express =require("express")
-var session = require('express-session');
 const path = require("path")
 const https = require("https")
 const fs = require("fs") 
 const log = require("./module/logging.js");
 const verify = require("./module/verify.js")
+const schedule = require("./module/schedule.js")
 
 
 const sslOptions = {
@@ -49,6 +49,9 @@ app.use("/comment",commentApi)
 
 const logRouterApi = require("./router/log")
 app.use('/log', logRouterApi);
+
+const visitorApi = require("./router/visitor")
+app.use('/visitor', visitorApi);
 
 app.use(log.logging)
 

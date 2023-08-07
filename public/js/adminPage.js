@@ -2,21 +2,37 @@ let cur = -1
 let max = -1
 
 window.onload = async() =>{
-    document.getElementById("")
+    loadSearchEvent()
+
     await fetch(`/log?newest=${1}&id=${""}&pagenum=${1}`,{
         headers: {
-            'Authorization': localStorage.getItem("token")
+            'Authorization': getCookie("token")
         }
     })
     .then((response) => {
         return response.json()
     })
     .then((result) => {
-        if(result.auth)
+        if(result.auth == true){
+            loadLogEvent(result)
+            cur = 1
+            setPage()
+        } else{
+            window.location.href = `/`;
+        }
+    })
 
-        loadLogEvent(result)
-        cur = 1
-        setPage()
+    await fetch(`/visitor`,{
+        headers: {
+            'Authorization': getCookie("token")
+        }
+    })
+    .then((response) => {
+        return response.json()
+    })
+    .then((result) => {
+        document.getElementById("todayVisitor").innerText = `${result.todaycount}번`
+        document.getElementById("totalVisitor").innerText = `${result.totalcount}번`
     })
 }
 
@@ -47,7 +63,29 @@ const loadLogEvent = async(result) =>{
 
 const loadSearchEvent = async() =>{
     cur = 1;
-    loadNewPageEvent(1)
+    await loadNewPageEvent(1)
+    await fetch(`/log/search-history`,{
+        headers: {
+            'Authorization': getCookie("token")
+        }
+    })
+    .then((response) => {
+        return response.json()
+    })
+    .then((result) => {
+        document.getElementById("searchHistoryArea").replaceChildren();
+        for(let i =0;i<result.data.length;i++){
+            var searchHistory = document.createElement("input");
+            searchHistory.type="button";
+    
+            searchHistory.value = result.data[i]
+            searchHistory.style.display = "block";
+            searchHistory.style.backgroundColor = 'white';
+            searchHistory.style.display = 'flex';
+            searchHistory.style.justifyContent = 'flex-start';
+            document.getElementById("searchHistoryArea").appendChild(searchHistory);
+        }
+    }) 
 }
 
 const loadNewPageEvent = async(pagenum) =>{
@@ -57,27 +95,34 @@ const loadNewPageEvent = async(pagenum) =>{
     } else{
         isNewest = 1
     }
-    await fetch(`/log?newest=${isNewest}&id=${document.getElementById("idInput").value}&pagenum=${pagenum}&token=${localStorage.getItem("token")}`)
+    await fetch(`/log?newest=${isNewest}&id=${document.getElementById("idInput").value}&pagenum=${pagenum}`,{
+        headers: {
+            'Authorization': getCookie("token")
+        }
+    })
     .then((response) => {
         return response.json()
     })
     .then((result) => {
-        localStorage.setItem("token",result.token)
-        loadLogEvent(result) //무조건 최신순 10개 들어옵니다.
+        loadLogEvent(result) // 최신순 10개 들어옵니다.
         setPage()
     })
 
 }
 
-
 const logOutEvent = async() =>{
-    await fetch(`/account/log-out?token=${localStorage.getItem("token")}`)
+    await fetch(`/account/log-out`,{
+        headers: {
+            'Authorization': getCookie("token")
+        }
+    })
     .then((response) => {
         return response.json()
     })
     .then((result) => {
         try{
-            window.location.href = '/loginPage';
+            deleteCookie("token")
+            window.location.href = '/';
         } catch{
             console.log("예상못한 에러 발생")
         }
@@ -100,4 +145,26 @@ const loadAfterPageEvent = async() =>{
         cur = cur + 1;
         loadNewPageEvent(cur);
     }
+}
+
+const deleteSearchHistoryEvent = async() =>{
+    fetch("/log/search-history",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
+        "method" : "DELETE",
+        "headers":{
+            "Content-Type":"application/json",
+            'Authorization': getCookie("token")      
+        }
+    }) 
+    .then((response) => {
+        return response.json()
+    })
+    .then((result) => {
+        if(result.success == true){
+            alert("삭제 완료")
+            document.getElementById("searchHistoryArea").replaceChildren();
+        }
+        else{
+            alert("삭제 실패")
+        }
+    })
 }

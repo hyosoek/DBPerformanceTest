@@ -10,14 +10,28 @@
     <input type="button" value="로그아웃" onclick="logOutEvent()">
     <div>관리자 전용 페이지입니다.</div>
     <br>
+    <span>오늘의 방문자 수 : </span>
+    <span id="todayVisitor"></span>
+    <br>
+    <span>전체 방문자 수 : </span>
+    <span id="totalVisitor"></span>
+    <br>
+    <br>
     
     <div>
         id : <input id = "idInput"></input> (빈칸 시 전체검색)
         <br>
         <input type="radio" name="gender" id="newest">최신순
         <input type="radio" name="gender" id="oldest">오래된순
-        <input type="button" value="검색" id="searchBtn"onclick="loadSearchEvent()">
+        <input type="button" value="검색" id="searchBtn" onclick="loadSearchEvent()">
     </div>
+    
+
+    <br>
+    <div id = "searchHistoryArea"></div>
+    <input type="button" value="검색기록삭제" id="deleteSearchHistoryBtn" onclick="deleteSearchHistoryEvent()">
+    <br>
+    <br>
 
     <div id = "logList">
 
@@ -27,6 +41,7 @@
     <span id ="showPageNum"></span>
 
     <script src="../js/adminPage.js"></script>
+    <script src="../js/cookie.js"></script>
 
 </body>
 </html>

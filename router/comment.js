@@ -13,12 +13,15 @@ router.get("/count",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
-        "pagecount":null
+        "pagecount":null,
+        "auth" : false
     }
     let client = null
     try{
+        if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+        
         const numCheck = new inputCheck(postnum)
-
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
         else{
             const commentperpage = process.env.commentPerPage // 환경변수
@@ -42,8 +45,10 @@ router.get("/count",async(req,res,next)=>{
         console.log("GET /comment/count",err.message)
         result.message = err.message
     }finally{
-        if(client)client.end()
-        req.resData = result
+        if(client) client.end()
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
 })
@@ -53,10 +58,14 @@ router.get("/",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
-        "commentList": []
+        "commentList": [],
+        "auth" : false
     }
     let client = null
     try{
+        if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+
         const numCheck1 = new inputCheck(postnum)
         const numCheck2 = new inputCheck(commentpagenum)
         if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
@@ -88,8 +97,10 @@ router.get("/",async(req,res,next)=>{
         console.log("GET /comment",err.message)
         result.message = err.message
     }finally{
-        if(client)client.end()
-        req.resData = result
+        if(client) client.end()
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
     
@@ -100,18 +111,21 @@ router.post("/",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
+        "auth":false
     }
     let client = null
     try{
+        if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+
         const detailCheck = new inputCheck(detail)
         const numCheck2 = new inputCheck(postnum)
-
         if (detailCheck.isMinSize(2).isMaxSize(1023).isEmpty().result != true) result.message = detailCheck.errMessage
         else if (numCheck2.isEmpty().result != true) result.message = numCheck2.errMessage
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.customData.userNum
+            const usernum = await req.decoded.userNum
             const sql = `INSERT INTO comment(detail,usernum,postnum) VALUES($1,$2,$3);`
             const value = [detail,usernum,postnum]
             const data = await client.query(sql,value)
@@ -124,8 +138,10 @@ router.post("/",async(req,res,next)=>{
         console.log("POST /comment",err.message)
         result.message = err.message
     }finally{
-        if(client)client.end()
-        req.resData = result
+        if(client) client.end()
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
 })
@@ -136,18 +152,21 @@ router.put("/",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
+        "auth":false
     }
     let client = null
     try{
+        if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+
         const detailCheck = new inputCheck(detail)
         const numCheck1 = new inputCheck(commentnum)
-
         if (detailCheck.isMinSize(2).isMaxSize(1023).isEmpty().result != true) result.message = detailCheck.errMessage
         else if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = await req.customData.userNum
+            const usernum = await req.decoded.userNum
             const sql = `UPDATE comment SET detail = $1 WHERE commentnum = $2 AND usernum = $3;`
             const value = [detail,commentnum,usernum]
             const data = await client.query(sql,value)
@@ -160,8 +179,10 @@ router.put("/",async(req,res,next)=>{
         console.log("PUT /comment",err.message)
         result.message = err.message
     }finally{
-        if(client)client.end()
-        req.resData = result
+        if(client) client.end()
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
     
@@ -171,17 +192,20 @@ router.delete("/",async(req,res,next)=>{
     const {commentnum} = req.body;
     const result = {
         "success" : false,
-        "message" : ""
+        "message" : "",
+        "auth":false
     }
     var client = null
     try{
+        if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
+        result.auth = true
+
         const numCheck1 = new inputCheck(commentnum)
-        
         if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const usernum = req.customData.userNum
+            const usernum = req.decoded.userNum
             const sql = `DELETE FROM comment WHERE commentnum = $1 AND usernum = $2;`
             const value = [commentnum,usernum]
             const data = await client.query(sql,value)
@@ -195,8 +219,10 @@ router.delete("/",async(req,res,next)=>{
         console.log("DELETE /comment",err.message)
         result.message = err.message
     }finally{
-        if(client)client.end()
-        req.resData = result
+        if(client) client.end()
+        res.send(result)
+
+        req.resData = result //for logging
         next()
     }
 })

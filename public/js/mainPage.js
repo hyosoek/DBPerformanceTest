@@ -16,7 +16,7 @@ window.onload = () =>{
 const loadPage = (pageNum) =>{
     fetch(`/post/count`,{
         headers: {
-            'Authorization': localStorage.getItem("token")
+            'Authorization': getCookie("token")
         }
     })
     .then((response) => {
@@ -34,7 +34,11 @@ const loadPage = (pageNum) =>{
 
 //Event
 const loadPostPage = (pageNum) =>{
-    fetch(`/post/list?pagenum=${pageNum}&token=${localStorage.getItem("token")}`)
+    fetch(`/post/list?pagenum=${pageNum}`,{
+        headers: {
+            'Authorization': getCookie("token")
+        }
+    })
     .then((response) => {
         return response.json()
     })
@@ -72,12 +76,17 @@ const loadAfterPostPageEvent = () =>{
 }
 
 const logOutEvent = () =>{
-    fetch(`/account/log-out?token=${localStorage.getItem("token")}`)
+    fetch(`/account/log-out`,{
+        headers: {
+            'Authorization': getCookie("token")
+        }
+    })
     .then((response) => {
         return response.json()
     })
     .then((result) => {
         try{
+            deleteCookie("token")
             window.location.href = '/';
         } catch{
             console.log("예상못한 에러 발생")
@@ -97,7 +106,7 @@ const showPostPageEvent = (postnum)=>{
 }
 
 const  writePostPageEvent = ()=>{
-    window.location.href = `/writePostPage?token=${localStorage.getItem("token")}`;
+    window.location.href = `/writePostPage`;
 }
 
 
