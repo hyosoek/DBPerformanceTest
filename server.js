@@ -3,23 +3,22 @@ const express =require("express")
 const path = require("path")
 const https = require("https")
 const fs = require("fs") 
-const log = require("./module/logging.js");
-const verify = require("./module/verify.js")
+const log = require("./middleware/logging.js");
 const schedule = require("./module/schedule.js")
+const errorHandler = require("./middleware/errorhandling.js")
 
 
+const app = express()
 const sslOptions = {
     "key":fs.readFileSync(path.join(__dirname,"ssl/key.pem")),
     "cert": fs.readFileSync(path.join(__dirname,"ssl/cert.pem")),
     "passphrase" : "1234" 
 }
 
-//middleware with API
-const app = express()
 app.use(express.json())
 app.use(express.static("public"))
-app.get("*",(req,res,next) =>{ //next는 자동으로 넘어가줌
-    const protocol = req.protocol //프로토콜을 가져올 수 있음
+app.get("*",(req,res,next) =>{
+    const protocol = req.protocol 
     if(protocol == "https"){
         next()
     } else{
@@ -32,8 +31,6 @@ app.get("*",(req,res,next) =>{ //next는 자동으로 넘어가줌
 //API
 const pages = require("./router/pages")
 app.use("/",pages) 
-
-app.use(verify.verifyWithToken); 
 
 const accountApi = require("./router/account")
 app.use("/account", accountApi)
@@ -54,6 +51,10 @@ const visitorApi = require("./router/visitor")
 app.use('/visitor', visitorApi);
 
 app.use(log.logging)
+
+app.use(errorHandler.errorPass)
+
+
 
 
 //서버 시작

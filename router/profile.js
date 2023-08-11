@@ -3,25 +3,20 @@ const router = require("express").Router()
 const {Client} = require("pg")
 const db = require('../database.js');
 const inputCheck = require("../module/inputCheck.js");
-
-const logg = require("./log.js");
+const auth = require('../middleware/authorization');
 
 // 프로필보기
-router.get("/",async(req,res,next)=>{
+router.get("/",auth.userCheck,async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
         "name" : "",
         "mail": "",
         "birth": "",
-        "contact": "",
-        "auth":false
+        "contact": ""
     }
     let client = null
         try{
-            if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-            result.auth = true
-
             client = new Client(db.pgConnect)
             client.connect()
             const usernum = await req.decoded.userNum
@@ -57,17 +52,14 @@ router.get("/",async(req,res,next)=>{
 })
 
 // 프로필수정
-router.put("/",async(req,res,next)=>{
+router.put("/",auth.userCheck,async(req,res,next)=>{
     const {mail,birth,contact} = req.body; // 받아옴
     const result = {
         "success" : false,
-        "message" : "",
-        "auth" : false
+        "message" : ""
     }
     let client = null
     try{
-        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
 
         const mailCheck = new inputCheck(mail)
         const birthCheck = new inputCheck(birth)

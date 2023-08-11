@@ -3,8 +3,9 @@ const inputCheck = require("../module/inputCheck.js");
 
 const {Client} = require("pg")
 const db = require('../database.js');
-const verify = require("../module/verify.js");
+const verify = require("../middleware/verify.js");
 const loginCounter = require("../module/loginCounter.js");
+const auth = require('../middleware/authorization');
 
 
 // 로그인
@@ -53,15 +54,12 @@ router.post("/log-in",async(req,res,next)=>{
        
 })
 //로그아웃
-router.get("/log-out",async(req,res,next)=>{
+router.get("/log-out",auth.userCheck,async(req,res,next)=>{
     const result = {
         "success" : false,
-        "message" : "",
-        "auth" : false
+        "message" : ""
     }
     try{
-        if(!req.decoded) throw new Error('authorization Fail');
-        result.auth = true
         result.success = true
         //res.clearCookie("token")
         //토큰 블랙리스트(blacklist) 처리
@@ -253,13 +251,11 @@ router.put("/modify-pw",async(req,res,next)=>{
     const {newpw1,newpw2} = req.body; // 받아옴
     const result = {
         "success" : false,
-        "message" : "",
-        "auth" : false
+        "message" : ""
     }
     let client = null
     try{
         if(!req.decoded) throw new Error('authorization Fail');
-        result.auth = true
 
         const pwCheck = new inputCheck(newpw1)
         if(pwCheck.isMinSize(4).isMaxSize(31).isSameWith(newpw2).isEmpty().result != true) result.message = pwCheck.errMessage
@@ -291,8 +287,7 @@ router.delete("/",async(req,res,next)=>{
     const {pw} = req.body;
     const result = {
         "success" : false,
-        "message" : "",
-        "auth" : false
+        "message" : ""
     }
     let client = null
     try{

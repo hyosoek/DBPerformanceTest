@@ -23,7 +23,7 @@ const loadPage = (pageNum) =>{
         return response.json()
     })
     .then((result) => {
-        if(result.auth == true){
+        if(result.success == true){
             pageMaxCount = result.pagecount
             loadPostPage(pageNum)
         } else{

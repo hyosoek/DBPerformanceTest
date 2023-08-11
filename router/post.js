@@ -4,24 +4,19 @@ const inputCheck = require("../module/inputCheck.js");
 
 const {Client} = require("pg")
 const db = require('../database.js');
-
-const logg = require("./log.js");
+const auth = require('../middleware/authorization');
 
 
 // load postlist
-router.get("/list",async(req,res,next)=>{
+router.get("/list",auth.userCheck,async(req,res,next)=>{
     const {pagenum} = req.query; // 받아옴
     const result = {
         "success" : false,
         "message" : "",
-        "postList" : [],
-        "auth":null
+        "postList" : []
     }
     let client = null
     try{
-        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
-
         const numCheck = new inputCheck(pagenum)
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
         else{
@@ -59,18 +54,14 @@ router.get("/list",async(req,res,next)=>{
 })
 
 // countPage
-router.get("/count",async(req,res,next)=>{
+router.get("/count",auth.userCheck,async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
-        "pagecount":null,
-        "auth":false
+        "pagecount":null
     }
     let client = null
     try{
-        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
-        
         client = new Client(db.pgConnect)
         client.connect()
         const sql = "SELECT COUNT(*) AS count FROM post;"
@@ -105,13 +96,11 @@ router.get("/",async(req,res,next)=>{
         "title" : "",
         "detail": "",
         "date" : "",
-        "name" : "",
-        "auth" : false
+        "name" : ""
     }
     let client = null
     try{
         if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
 
         const numCheck = new inputCheck(postnum)
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
@@ -155,13 +144,11 @@ router.post("/",async(req,res,next)=>{
     //auto date
     const result = {
         "success" : false,
-        "message" : "",
-        "auth" : false
+        "message" : ""
     }
     let client = null
     try{
         if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
 
         const titleCheck = new inputCheck(title)
         const detailCheck = new inputCheck(detail)
@@ -197,13 +184,11 @@ router.put("/",async(req,res,next)=>{
     const {title,detail,postnum} = req.body; // 역시나 예외처리할 때 유저 고유 식별번호를 확인합니다.
     const result = {
         "success" : false,
-        "message" : "",
-        "auth" : false
+        "message" : ""
     }
     let client = null
     try{
         if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
 
         const titleCheck = new inputCheck(title)
         const detailCheck = new inputCheck(detail)
@@ -243,13 +228,11 @@ router.delete("/",async(req,res,next)=>{
     const {postnum} = req.body; //애초에 프론트엔드에서 예외처리를 해줘도 백엔드에서 한번더 점검해야 합니다.(세션을 통해서)    
     const result = {
         "success" : false,
-        "message" : "",
-        "auth" : false
+        "message" : ""
     }
     var client = null
     try{
         if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
 
         const numCheck = new inputCheck(postnum)
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage

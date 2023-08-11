@@ -2,26 +2,22 @@ const router = require("express").Router()
 const client = require("mongodb").MongoClient
 
 const inputCheck = require("../module/inputCheck.js");
-const verify = require("../module/verify.js")
 const searchHistory = require("../module/searchHistory.js")
 const redis =require("redis").createClient()
+const auth = require("../middleware/authorization.js")
 
 
-router.get("/",async(req,res,next) =>{
+router.get("/",auth.adminCheck,async(req,res,next) =>{
     const {newest,id,pagenum} = req.query;
     const result = {
         "success" :false,
         "message" :null,
         "data" :null,
-        "maxpage": null,
-        "auth": false
+        "maxpage": null
     }
     
     let conn = null //중요!
     try{
-        if(req.decoded.isAdmin == false || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
-
         const newestCheck = new inputCheck(newest)
         const idCheck = new inputCheck(id)
         const pagenumCheck = new inputCheck(pagenum)
@@ -30,7 +26,6 @@ router.get("/",async(req,res,next) =>{
         else if (pagenumCheck.isEmpty().result != true) result.message = pagenumCheck.errMessage
         else{
             conn  = await client.connect(process.env.mongoDb)//계정이 없어서 오로지 하나의 변수
-            
             let isNewest = null;
             isNewest = parseInt(newest) * (-1)
             const matchCondition = id ? { id: id } : {};
@@ -77,7 +72,7 @@ router.get("/",async(req,res,next) =>{
     }
 })
 
-router.get("/search-history",async(req,res,next) =>{
+router.get("/search-history",auth.adminCheck,async(req,res,next) =>{
     const result = {
         "success" :false,
         "message" :null,
@@ -86,9 +81,6 @@ router.get("/search-history",async(req,res,next) =>{
     
     let conn = null //중요!
     try{
-        if(req.decoded.isAdmin == false || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
-        
         await redis.connect()
         const redislist = await redis.zRange('searchHistory', 0, -1)
        
@@ -114,7 +106,6 @@ router.delete("/search-history",async(req,res,next) =>{
     let conn = null //중요!
     try{
         if(req.decoded.isAdmin == false || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
         
         await redis.connect()
         await redis.ZREMRANGEBYRANK('searchHistory', 0, -1)

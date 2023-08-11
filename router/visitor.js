@@ -3,9 +3,10 @@ const {Client} = require("pg")
 const db = require('../database.js');
 
 const loginCounter = require("../module/loginCounter.js");
+const auth = require("../middleware/authorization.js")
 
 // 로그인한 사람 수
-router.get("/",async(req,res,next)=>{
+router.get("/",auth.adminCheck,async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
@@ -15,7 +16,6 @@ router.get("/",async(req,res,next)=>{
     }
     let client = null
         try{
-            if(req.decoded.isAdmin == false || !req.decoded) throw new Error('authorization Fail');
             result.auth = true
 
             client = new Client(db.pgConnect)
@@ -43,7 +43,7 @@ router.get("/",async(req,res,next)=>{
             }
             
         }catch(err){
-            console.log("GET /profile",err.message)
+            console.log("GET /visitor",err.message)
             result.message = err.message
         }finally{
             if(client) client.end()

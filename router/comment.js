@@ -13,13 +13,11 @@ router.get("/count",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
-        "pagecount":null,
-        "auth" : false
+        "pagecount":null
     }
     let client = null
     try{
         if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
         
         const numCheck = new inputCheck(postnum)
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
@@ -58,13 +56,11 @@ router.get("/",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
-        "commentList": [],
-        "auth" : false
+        "commentList": []
     }
     let client = null
     try{
         if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
 
         const numCheck1 = new inputCheck(postnum)
         const numCheck2 = new inputCheck(commentpagenum)
@@ -110,13 +106,11 @@ router.post("/",async(req,res,next)=>{
     const {detail,postnum} = req.body;
     const result = {
         "success" : false,
-        "message" : "",
-        "auth":false
+        "message" : ""
     }
     let client = null
     try{
         if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
 
         const detailCheck = new inputCheck(detail)
         const numCheck2 = new inputCheck(postnum)
@@ -151,13 +145,11 @@ router.put("/",async(req,res,next)=>{
     //auto date
     const result = {
         "success" : false,
-        "message" : "",
-        "auth":false
+        "message" : ""
     }
     let client = null
     try{
         if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
 
         const detailCheck = new inputCheck(detail)
         const numCheck1 = new inputCheck(commentnum)
@@ -192,13 +184,11 @@ router.delete("/",async(req,res,next)=>{
     const {commentnum} = req.body;
     const result = {
         "success" : false,
-        "message" : "",
-        "auth":false
+        "message" : ""
     }
     var client = null
     try{
         if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
-        result.auth = true
 
         const numCheck1 = new inputCheck(commentnum)
         if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage

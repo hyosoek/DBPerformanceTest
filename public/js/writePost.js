@@ -17,7 +17,7 @@ const writePostEvent = async() =>{
         })
     }) 
     const result = await response.json();
-    if(result.auth == false){ // 강제 리디렉션
+    if(result.success == false){ // 강제 리디렉션
         window.location.href = `/`;
     }
     if(result.success == true){
