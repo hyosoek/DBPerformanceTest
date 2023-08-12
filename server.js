@@ -7,6 +7,8 @@ const log = require("./middleware/logging.js");
 const schedule = require("./module/schedule.js")
 const errorHandler = require("./middleware/errorhandling.js")
 
+const redis = require("redis").createClient();
+
 
 const app = express()
 const sslOptions = {
@@ -58,7 +60,7 @@ app.use(errorHandler.errorPass)
 
 
 //서버 시작
-app.listen(8000,() => {
+app.listen(8000,async() => {
     console.log("Web Server on PortNum:8000")
 })
 

@@ -1,0 +1,7 @@
+node-express server
+
+start with : node server.js
+
+you should start mongoDB
+sudo systemctl start mongod
+sudo systemctl status mongod 
