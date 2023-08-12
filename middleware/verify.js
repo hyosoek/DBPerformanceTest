@@ -18,7 +18,7 @@ const publishToken = async(userData) =>{ //갱신과, 생성을 동시에 하나
         process.env.randomNum,
         {
             "issuer" : "hyoseok",
-            "expiresIn" : "24h"
+            "expiresIn" : process.env.tokenTime + "h"
         })
         return token
     }catch(err){

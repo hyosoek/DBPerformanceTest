@@ -5,7 +5,7 @@ const redis =require("redis").createClient()
 const countLogin = async(userNum) => { //카운트 추가
     try{
         await redis.connect()
-        await redis.sAdd("userCount",userNum.toString())
+        await redis.sAdd(process.env.userCount,userNum.toString())
     } catch(err){
         console.log(err.message)
     } 
@@ -17,7 +17,7 @@ const showMemoryCount = async() => { //현재 redis 메모리에 존재하는 co
     let data = null
     try{
         await redis.connect()
-        data = await redis.sCard("userCount")
+        data = await redis.sCard(process.env.userCount)
     } catch(err){
         console.log(err.message)
     } 

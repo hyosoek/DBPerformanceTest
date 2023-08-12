@@ -82,7 +82,7 @@ router.get("/search-history",auth.adminCheck,async(req,res,next) =>{
     let conn = null //중요!
     try{
         await redis.connect()
-        const redislist = await redis.zRange('searchHistory', 0, -1)
+        const redislist = await redis.zRange(process.env.searchHistory, 0, -1)
        
         result.success = true
         result.message = "최근검색목록"
@@ -97,7 +97,7 @@ router.get("/search-history",auth.adminCheck,async(req,res,next) =>{
     }
 })
 
-router.delete("/search-history",async(req,res,next) =>{
+router.delete("/search-history",auth.adminCheck,async(req,res,next) =>{
     const result = {
         "success" :false,
         "message" :null
@@ -105,10 +105,8 @@ router.delete("/search-history",async(req,res,next) =>{
     
     let conn = null //중요!
     try{
-        if(req.decoded.isAdmin == false || !req.decoded) throw new Error('authorization Fail');
-        
         await redis.connect()
-        await redis.ZREMRANGEBYRANK('searchHistory', 0, -1)
+        await redis.ZREMRANGEBYRANK(process.env.searchHistory, 0, -1)
        
         result.success = true
         result.message = "삭제 완료"

@@ -88,7 +88,7 @@ router.get("/count",auth.userCheck,async(req,res,next)=>{
 })
 
 // getpost
-router.get("/",async(req,res,next)=>{
+router.get("/",auth.userCheck,async(req,res,next)=>{
     const {postnum} = req.query; // 받아옴
     const result = {
         "success" : false,
@@ -100,8 +100,6 @@ router.get("/",async(req,res,next)=>{
     }
     let client = null
     try{
-        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-
         const numCheck = new inputCheck(postnum)
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
         else{
@@ -139,7 +137,7 @@ router.get("/",async(req,res,next)=>{
 })
 
 // postWrite
-router.post("/",async(req,res,next)=>{
+router.post("/",auth.userCheck,async(req,res,next)=>{
     const {title,detail} = req.body;
     //auto date
     const result = {
@@ -148,8 +146,6 @@ router.post("/",async(req,res,next)=>{
     }
     let client = null
     try{
-        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-
         const titleCheck = new inputCheck(title)
         const detailCheck = new inputCheck(detail)
 
@@ -180,7 +176,7 @@ router.post("/",async(req,res,next)=>{
 })
 
 // postFix
-router.put("/",async(req,res,next)=>{
+router.put("/",auth.userCheck,async(req,res,next)=>{
     const {title,detail,postnum} = req.body; // 역시나 예외처리할 때 유저 고유 식별번호를 확인합니다.
     const result = {
         "success" : false,
@@ -188,8 +184,6 @@ router.put("/",async(req,res,next)=>{
     }
     let client = null
     try{
-        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-
         const titleCheck = new inputCheck(title)
         const detailCheck = new inputCheck(detail)
         const numCheck2 = new inputCheck(postnum)
@@ -224,7 +218,7 @@ router.put("/",async(req,res,next)=>{
 })
 
 // postDelete
-router.delete("/",async(req,res,next)=>{
+router.delete("/",auth.userCheck,async(req,res,next)=>{
     const {postnum} = req.body; //애초에 프론트엔드에서 예외처리를 해줘도 백엔드에서 한번더 점검해야 합니다.(세션을 통해서)    
     const result = {
         "success" : false,
@@ -232,8 +226,6 @@ router.delete("/",async(req,res,next)=>{
     }
     var client = null
     try{
-        if(req.decoded.isAdmin || !req.decoded) throw new Error('authorization Fail');
-
         const numCheck = new inputCheck(postnum)
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
         else{

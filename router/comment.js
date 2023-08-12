@@ -3,12 +3,11 @@ const inputCheck = require("../module/inputCheck.js");
 
 const {Client} = require("pg")
 const db = require('../database.js');
-
-const logg = require("./log.js");
+const auth = require('../middleware/authorization');
 
 
 // 코멘트 페이지 개수 가져오기
-router.get("/count",async(req,res,next)=>{
+router.get("/count",auth.userCheck,async(req,res,next)=>{
     const {postnum} = req.query
     const result = {
         "success" : false,
@@ -17,8 +16,6 @@ router.get("/count",async(req,res,next)=>{
     }
     let client = null
     try{
-        if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
-        
         const numCheck = new inputCheck(postnum)
         if (numCheck.isEmpty().result != true) result.message = numCheck.errMessage
         else{
@@ -51,7 +48,7 @@ router.get("/count",async(req,res,next)=>{
     }
 })
 // 코멘트 페이지 단위로 가져오기
-router.get("/",async(req,res,next)=>{
+router.get("/",auth.userCheck,async(req,res,next)=>{
     const {postnum,commentpagenum} = req.query; // 받아옴
     const result = {
         "success" : false,
@@ -60,8 +57,6 @@ router.get("/",async(req,res,next)=>{
     }
     let client = null
     try{
-        if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
-
         const numCheck1 = new inputCheck(postnum)
         const numCheck2 = new inputCheck(commentpagenum)
         if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
@@ -102,7 +97,7 @@ router.get("/",async(req,res,next)=>{
     
 })
 // commentWrite
-router.post("/",async(req,res,next)=>{
+router.post("/",auth.userCheck,async(req,res,next)=>{
     const {detail,postnum} = req.body;
     const result = {
         "success" : false,
@@ -110,8 +105,6 @@ router.post("/",async(req,res,next)=>{
     }
     let client = null
     try{
-        if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
-
         const detailCheck = new inputCheck(detail)
         const numCheck2 = new inputCheck(postnum)
         if (detailCheck.isMinSize(2).isMaxSize(1023).isEmpty().result != true) result.message = detailCheck.errMessage
@@ -140,7 +133,7 @@ router.post("/",async(req,res,next)=>{
     }
 })
 // commentFix
-router.put("/",async(req,res,next)=>{
+router.put("/",auth.userCheck,async(req,res,next)=>{
     const {detail,commentnum} = req.body;
     //auto date
     const result = {
@@ -149,8 +142,6 @@ router.put("/",async(req,res,next)=>{
     }
     let client = null
     try{
-        if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
-
         const detailCheck = new inputCheck(detail)
         const numCheck1 = new inputCheck(commentnum)
         if (detailCheck.isMinSize(2).isMaxSize(1023).isEmpty().result != true) result.message = detailCheck.errMessage
@@ -165,7 +156,6 @@ router.put("/",async(req,res,next)=>{
             
             result.success = true
             result.message = "수정 완료"
-
         }
     }catch(err){
         console.log("PUT /comment",err.message)
@@ -180,7 +170,7 @@ router.put("/",async(req,res,next)=>{
     
 })
 // commentDelete
-router.delete("/",async(req,res,next)=>{
+router.delete("/",auth.userCheck,async(req,res,next)=>{
     const {commentnum} = req.body;
     const result = {
         "success" : false,
@@ -188,8 +178,6 @@ router.delete("/",async(req,res,next)=>{
     }
     var client = null
     try{
-        if(req.decoded.isAdmin == true || !req.decoded) throw new Error('authorization Fail');
-
         const numCheck1 = new inputCheck(commentnum)
         if (numCheck1.isEmpty().result != true) result.message = numCheck1.errMessage
         else{

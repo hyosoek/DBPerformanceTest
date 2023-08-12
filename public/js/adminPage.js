@@ -13,7 +13,7 @@ window.onload = async() =>{
         return response.json()
     })
     .then((result) => {
-        if(result.sucess == true){
+        if(result.success == true){
             loadLogEvent(result)
             cur = 1
             setPage()

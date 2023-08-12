@@ -11,13 +11,10 @@ router.get("/",auth.adminCheck,async(req,res,next)=>{
         "success" : false,
         "message" : "",
         "todaycount" : null,
-        "totalcount" : null,
-        "auth":false
+        "totalcount" : null
     }
     let client = null
         try{
-            result.auth = true
-
             client = new Client(db.pgConnect)
             client.connect()
             const currentTime = new Date();

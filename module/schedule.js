@@ -10,7 +10,7 @@ const hourSchedule = schedule.scheduleJob('0 * * * *',async function(){
         dbClient.connect()
         
         await redis.connect()
-        const data = await redis.sCard("userCount");
+        const data = await redis.sCard(process.env.userCount);
         
         const currentTime = new Date();
         const currentDate = currentTime.toISOString().slice(0, 10);
@@ -19,7 +19,13 @@ const hourSchedule = schedule.scheduleJob('0 * * * *',async function(){
         const values = [currentDate, currentHMS, data];
         await dbClient.query(query, values);
         
-        await redis.del("userCount");
+        await redis.del(process.env.userCount);
+
+        // 오래된 블랙리스트 청소하기
+        const expiredBlacklist = await redis.ZRANGEBYSCORE (process.env.blackList, 0, (Math.floor(currentTime-(parseInt(process.env.tokenTime) * 60 * 60 * 1000))))
+        for(const member of expiredBlacklist){
+            await redis.ZREM(process.env.blackList,member)
+        }
 
     } catch (error) {
         console.error(error);

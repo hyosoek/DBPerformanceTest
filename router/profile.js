@@ -60,7 +60,6 @@ router.put("/",auth.userCheck,async(req,res,next)=>{
     }
     let client = null
     try{
-
         const mailCheck = new inputCheck(mail)
         const birthCheck = new inputCheck(birth)
         const contactCheck = new inputCheck(contact)

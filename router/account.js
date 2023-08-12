@@ -6,6 +6,8 @@ const db = require('../database.js');
 const verify = require("../middleware/verify.js");
 const loginCounter = require("../module/loginCounter.js");
 const auth = require('../middleware/authorization');
+const redis = require("redis").createClient();
+
 
 
 // 로그인
@@ -54,21 +56,27 @@ router.post("/log-in",async(req,res,next)=>{
        
 })
 //로그아웃
-router.get("/log-out",auth.userCheck,async(req,res,next)=>{
+router.get("/log-out",auth.authCheck,async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : ""
     }
     try{
         result.success = true
-        //res.clearCookie("token")
+        res.clearCookie("token")
+
+        await redis.connect()
+        const currentTime = new Date()
+        await redis.zAdd(process.env.blackList, {"score" : Math.floor(currentTime) ,"value" : req.headers.authorization}); // 첫반째로 초기화
+
         //토큰 블랙리스트(blacklist) 처리
     }catch(err){
         console.log("POST /account/log-out", err.message)
         result.message = err.message
     } finally{
+        redis.disconnect()
         res.send(result)
-
+        
         req.resData = result //for logging
         next()
     }    
@@ -207,7 +215,7 @@ router.get("/certification",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : "",
-        "token":null
+        "token": null
     }
     let client = null
     try{
@@ -247,7 +255,7 @@ router.get("/certification",async(req,res,next)=>{
    
 })
 // 비번찾기 - 비번변경
-router.put("/modify-pw",async(req,res,next)=>{
+router.put("/modify-pw",auth.authCheck,async(req,res,next)=>{
     const {newpw1,newpw2} = req.body; // 받아옴
     const result = {
         "success" : false,
@@ -255,8 +263,6 @@ router.put("/modify-pw",async(req,res,next)=>{
     }
     let client = null
     try{
-        if(!req.decoded) throw new Error('authorization Fail');
-
         const pwCheck = new inputCheck(newpw1)
         if(pwCheck.isMinSize(4).isMaxSize(31).isSameWith(newpw2).isEmpty().result != true) result.message = pwCheck.errMessage
         else {
@@ -283,7 +289,7 @@ router.put("/modify-pw",async(req,res,next)=>{
     
 })
 // 계정삭제
-router.delete("/",async(req,res,next)=>{
+router.delete("/",auth.authCheck,async(req,res,next)=>{
     const {pw} = req.body;
     const result = {
         "success" : false,
@@ -291,9 +297,6 @@ router.delete("/",async(req,res,next)=>{
     }
     let client = null
     try{
-        if(!req.decoded) throw new Error('authorization Fail');
-        result.auth = true
-
         const pwCheck = new inputCheck(pw)
         if(pwCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = pwCheck.errMessage
         else {
@@ -302,8 +305,11 @@ router.delete("/",async(req,res,next)=>{
             const sql = "DELETE FROM account WHERE usernum = $1 AND pw = $2;"
             const values = [req.decoded.userNum,pw]
             const data = await client.query(sql,values)
-            // res.clearCookie("token")
-            // token 블랙리스트(blacklist처리) 
+            
+            res.clearCookie("token")
+            await redis.connect()
+            const currentTime = new Date()
+            await redis.zAdd(process.env.blackList, {"score" : Math.floor(currentTime) ,"value" : req.headers.authorization}); // 첫반째로 초기화
 
             result.success  = true
             result.message = "계정 삭제 완료"
