@@ -36,13 +36,13 @@ router.get("/count",auth.userCheck,async(req,res,next)=>{
                 result.message == "댓글이 존재하지 않습니다."
             }
         }
-    }catch(err){
-        console.log("GET /comment/count",err.message)
-        result.message = err.message
-    }finally{
-        if(client) client.end()
         res.send(result)
 
+    }catch(err){
+        console.log("GET /comment/count",err.message)
+        next(err)
+    }finally{
+        if(client) client.end()
         req.resData = result //for logging
         next()
     }
@@ -84,13 +84,13 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
                 result.message == "댓글이 존재하지 않습니다."
             }
         }
-    }catch(err){
-        console.log("GET /comment",err.message)
-        result.message = err.message
-    }finally{
-        if(client) client.end()
         res.send(result)
 
+    }catch(err){
+        console.log("GET /comment",err.message)
+        next(err)
+    }finally{
+        if(client) client.end()
         req.resData = result //for logging
         next()
     }
@@ -120,14 +120,13 @@ router.post("/",auth.userCheck,async(req,res,next)=>{
             result.success = true
             result.message = "작성 완료"
         }
+        res.send(result)
 
     }catch(err){
         console.log("POST /comment",err.message)
-        result.message = err.message
+        next(err)
     }finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }
@@ -153,17 +152,20 @@ router.put("/",auth.userCheck,async(req,res,next)=>{
             const sql = `UPDATE comment SET detail = $1 WHERE commentnum = $2 AND usernum = $3;`
             const value = [detail,commentnum,usernum]
             const data = await client.query(sql,value)
-            
+            if(data.rowCount == 0 ){
+                const error = new Error("No Auth to Update Data!")
+                error.status = 403
+                throw err
+            }
             result.success = true
             result.message = "수정 완료"
         }
+        res.send(result)
     }catch(err){
         console.log("PUT /comment",err.message)
-        result.message = err.message
+        next(err)
     }finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }
@@ -187,19 +189,21 @@ router.delete("/",auth.userCheck,async(req,res,next)=>{
             const sql = `DELETE FROM comment WHERE commentnum = $1 AND usernum = $2;`
             const value = [commentnum,usernum]
             const data = await client.query(sql,value)
-            const row = data.rows;
-            console.log(row)
+            if(data.rowCount == 0 ){
+                const error = new Error("No Auth to Delete Data!")
+                error.status = 403
+                throw err
+            }
             result.success = true
             result.message = "삭제 완료"
-
         }
-    }catch(err){
-        console.log("DELETE /comment",err.message)
-        result.message = err.message
-    }finally{
-        if(client) client.end()
         res.send(result)
 
+    }catch(err){
+        console.log("DELETE /comment",err.message)
+        next(err)
+    }finally{
+        if(client) client.end()
         req.resData = result //for logging
         next()
     }

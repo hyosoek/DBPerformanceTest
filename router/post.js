@@ -6,6 +6,8 @@ const {Client} = require("pg")
 const db = require('../database.js');
 const auth = require('../middleware/authorization');
 
+const upload = require('../middleware/imageUpload');
+
 
 // load postlist
 router.get("/list",auth.userCheck,async(req,res,next)=>{
@@ -41,13 +43,12 @@ router.get("/list",auth.userCheck,async(req,res,next)=>{
                 result.message == "게시글 존재하지 않습니다."
             }
         }
+        res.send(result)
     }catch(err){
         console.log("GET /post/list",err.message)
-        result.message = err.message
+        next(err)
     }finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }
@@ -75,13 +76,12 @@ router.get("/count",auth.userCheck,async(req,res,next)=>{
         }else{
             result.message = "게시글이 존재하지 않습니다."
         }
+        res.send(result)
     }catch(err){
         console.log("GET /post/count",err.message)
-        result.message = err.message
+        next(err)
     }finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result
         next()
     }
@@ -123,13 +123,12 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
                 result.message = "존재하지 않는 글입니다."
             }
         }
+        res.send(result)
     }catch(err){
         console.log("GET /post",err.message)
-        result.message = err.message
+        next(err)
     }finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }
@@ -137,7 +136,7 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
 })
 
 // postWrite
-router.post("/",auth.userCheck,async(req,res,next)=>{
+router.post("/",auth.userCheck,upload.single('image'),async(req,res,next)=>{
     const {title,detail} = req.body;
     //auto date
     const result = {
@@ -155,20 +154,21 @@ router.post("/",auth.userCheck,async(req,res,next)=>{
             client = new Client(db.pgConnect)
             client.connect()
             const usernum = await req.decoded.userNum
-            const sql = `INSERT INTO post(title,detail,usernum) VALUES($1,$2,$3);`
-            const value = [title, detail, usernum];
+            const sql = `INSERT INTO post(title,detail,usernum,imageurl) VALUES($1,$2,$3,$4);`
+            const initUrl = req.file.location
+            const modifiedUrl = initUrl.substring((process.env.AwsBucketAddress + "post/").length);
+            const value = [title, detail, usernum, modifiedUrl];
             const data = await client.query(sql,value)
     
             result.success = true
             result.message = "게시글 작성 성공" 
         }            
+        res.send(result)
     }catch(err){
         console.log("POST /post",err.message)
-        result.message = err.message
+        next(err)
     } finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }
@@ -199,17 +199,20 @@ router.put("/",auth.userCheck,async(req,res,next)=>{
             const value = [title, detail, postnum,usernum];
             const data = await client.query(sql,value)
 
+            if(data.rowCount == 0 ){
+                const error = new Error("No Auth to Update Data!")
+                error.status = 403
+                throw err
+            }
             result.success = true
             result.message = "게시글 수정 성공" 
-
-        }                   
+        }        
+        res.send(result)           
     }catch(err){
         console.log("PUT /post",err.message)
-        result.message = err.message
+        next(err)
     }finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }
@@ -237,17 +240,21 @@ router.delete("/",auth.userCheck,async(req,res,next)=>{
             console.log(postnum,usernum)
             const data = await client.query(sql,value)
 
+            if(data.rowCount == 0 ){
+                const error = new Error("No Auth to Delete Data!")
+                error.status = 403
+                throw err
+            }
+
             result.success = true
             result.message = "게시글 삭제 성공"  
-
+            res.send(result)
         }                  
     }catch(err){
         console.log("/post",err.message)
-        result.message = err.message
+        next(err)
     }finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }

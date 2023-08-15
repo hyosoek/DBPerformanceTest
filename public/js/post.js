@@ -110,7 +110,6 @@ const fixPostInitEvent = async() =>{
         fixBtn.onclick = fixPostEvent
     
 }   
-
 const fixPostEvent = async() =>{
     fetch("/post",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "PUT",
@@ -135,12 +134,11 @@ const fixPostEvent = async() =>{
             window.location.href = '/postPage'
         }
         else{
+            console.log(result)
             alert("권한이 없습니다.")
         }
     })
 }
-
-
 const deletePostEvent = async() =>{
     
     if(!confirm("정말 삭제하시겠습니까?")){
@@ -167,12 +165,12 @@ const deletePostEvent = async() =>{
                 window.location.href = '/mainPage'
             }
             else{
+                console.log(result)
                 alert("삭제 실패")
             }
         })
     }
 }
-
 const writeCommentEvent = async() =>{
     const response = await fetch("/comment",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "POST",
@@ -191,6 +189,7 @@ const writeCommentEvent = async() =>{
         window.location.href = '/postPage'
     }
     else{
+        console.log(result)
         alert(result.message)
     }
 }
@@ -211,6 +210,8 @@ const deleteCommentEvent = async() =>{
         window.location.href = '/postPage'
     }
     else{
+        console.log(result)
         alert(result.message)
     }
 }
+

@@ -36,16 +36,14 @@ router.get("/",auth.adminCheck,async(req,res,next)=>{
                 result.todaycount = parseInt(row[0].total_count) + redisData
                 result.totalcount = parseInt(row[1].total_count) + redisData
             } else{
-                result.message = "존재하지 않는 데이터입니다."
+                result.message = "데이터가 없습니다."
             }
-            
+            res.send(result)
         }catch(err){
             console.log("GET /visitor",err.message)
-            result.message = err.message
+            next(err)
         }finally{
             if(client) client.end()
-            res.send(result)
-    
             req.resData = result //for logging
             next()
         }

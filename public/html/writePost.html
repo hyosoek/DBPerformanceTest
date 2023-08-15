@@ -9,10 +9,17 @@
 <body>
     제목
     <input id ="title"></input>
+    <div></div>
     본문
     <input id = "detail"></input>
-    완료
-    <input id = "finBtn" type = "button"></input>
+    <input id = "finBtn" type = "button" value="완료"></input>
+
+    <br>
+    <input type="file" id="imageInput" accept="image/*">
+    <div id="imageContainer">
+        <img id="uploadedImage" alt="Uploaded Image">
+    </div>
+    
 
     <script src="../js/writePost.js"></script>
     <script src="../js/cookie.js"></script>

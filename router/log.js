@@ -63,12 +63,12 @@ router.get("/",auth.adminCheck,async(req,res,next) =>{
             }
             req.resData = result
         }
+        res.send(result)
     }catch(err){
         console.log(`GET /log Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
-        result.message = err.message
+        next(err)
     }finally{
         if(conn) conn.close()
-        res.send(result)
     }
 })
 
@@ -88,12 +88,12 @@ router.get("/search-history",auth.adminCheck,async(req,res,next) =>{
         result.message = "최근검색목록"
         result.data = redislist
 
+        res.send(result)
     }catch(err){
         console.log(`GET /log/search-history Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
-        result.message = err.message
+        next(err)
     }finally{
         redis.disconnect()
-        res.send(result)
     }
 })
 
@@ -111,12 +111,12 @@ router.delete("/search-history",auth.adminCheck,async(req,res,next) =>{
         result.success = true
         result.message = "삭제 완료"
 
+        res.send(result)
     }catch(err){
         console.log(`DELETE /log/search-history Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
-        result.message = err.message
+        next(err)
     }finally{
         redis.disconnect()
-        res.send(result)
     }
 })
 

@@ -25,31 +25,30 @@ router.post("/log-in",async(req,res,next)=>{
         const pwCheck = new inputCheck(pw)
         if (idCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = idCheck.errMessage
         if(pwCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = pwCheck.errMessage
-        
-        client = new Client(db.pgConnect)
-        client.connect()
-        const sql = "SELECT id,usernum,isadmin FROM account WHERE id=$1 AND pw = $2;"
-        const values = [id,pw]
-        const data = await client.query(sql,values)
-        const row = data.rows
-
-        if(row.length != 0) {
-            result.success  = true
-            result.message = "로그인 성공"
-            result.token = await verify.publishToken(row[0])
-            result.isadmin = row[0].isadmin
-            loginCounter.countLogin(parseInt(await row[0].usernum))
-        } else{
-            result.message = "해당하는 회원정보가 없습니다."
+        else{
+            client = new Client(db.pgConnect)
+            client.connect()
+            const sql = "SELECT id,usernum,isadmin FROM account WHERE id=$1 AND pw = $2;"
+            const values = [id,pw]
+            const data = await client.query(sql,values)
+            const row = data.rows
+    
+            if(row.length != 0) {
+                result.success  = true
+                result.message = "로그인 성공"
+                result.token = await verify.publishToken(row[0])
+                result.isadmin = row[0].isadmin
+                loginCounter.countLogin(parseInt(await row[0].usernum))
+            } else{
+                result.message = "로그인 실패"
+            }
         }
-
+        res.send(result)
     }catch(err){
-        console.log("POST /account/log-in", err.message)
-        result.message = err.message
+        console.log("POST /account/log-in", err.message) // 이건 해주는게 맞음
+        next(err)
     } finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }
@@ -67,16 +66,15 @@ router.get("/log-out",auth.authCheck,async(req,res,next)=>{
 
         await redis.connect()
         const currentTime = new Date()
-        await redis.zAdd(process.env.blackList, {"score" : Math.floor(currentTime) ,"value" : req.headers.authorization}); // 첫반째로 초기화
+        await redis.zAdd(process.env.blackList, {"score" : Math.floor(currentTime) ,"value" : req.headers.authorization}); //블랙리스트 삽입
 
         //토큰 블랙리스트(blacklist) 처리
+        res.send(result)
     }catch(err){
         console.log("POST /account/log-out", err.message)
-        result.message = err.message
+        next(err)
     } finally{
         redis.disconnect()
-        res.send(result)
-        
         req.resData = result //for logging
         next()
     }    
@@ -109,13 +107,12 @@ router.get("/id-exist",async(req,res,next)=>{ //아이디 중복체크
                 result.message = "이미 존재하는 id입니다."
             }
         }
+        res.send(result)
     }catch(err){
         console.log("GET /account/id-exist/",err.message)
         result.message = err.message
     }finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }
@@ -149,17 +146,20 @@ router.post("/",async(req,res,next)=>{
             const sql = "INSERT INTO account(id,pw,name,mail,birth,contact) VALUES($1,$2,$3,$4,$5,$6);"
             const values = [id,pw1,name,mail,birth,contact]
             const data = await client.query(sql,values)
-    
+
             result.success  = true
             result.message = "회원가입 성공" 
         }
+        res.send(result)
     }catch(err){
+        if(err.code == 23505){
+            err.status = 409
+            err.message = "Unique Value Fail!"
+        } // unique fail이 아니면, 자동으로 500처리
         console.log("POST /account",err.message)
-        result.message = err.message
+        next(err)
     }finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }
@@ -196,12 +196,12 @@ router.get("/find-id",async(req,res,next)=>{
                 result.message = "존재하지 않는 정보입니다."
             }
         }
+        res.send(result)
     }catch(err){
         console.log("GET /account/find-id",err.message)
-        result.message = err.message
+        next(err)
     }finally {
         if(client) client.end()
-        res.send(result)
 
         req.resData = result //for logging
         next()
@@ -242,12 +242,12 @@ router.get("/certification",async(req,res,next)=>{
                 result.message = "존재하지 않는 정보입니다."
             }
         }
+        res.send(result)
     }catch(err){
         console.log("GET /account/certification",err.message)
-        result.message = err.message
+        next(err)
     } finally{
         if(client) client.end()
-        res.send(result)
 
         req.resData = result //for logging
         next()
@@ -271,17 +271,19 @@ router.put("/modify-pw",auth.authCheck,async(req,res,next)=>{
             const sql = "UPDATE account SET pw = $1 WHERE usernum = $2;"
             const values = [newpw1,await req.decoded.userNum]
             const data = await client.query(sql,values)
-            //res.clearCookie("token")
+            res.clearCookie("token")
             //token 블랙리스트(blacklist)처리
+            await redis.zAdd(process.env.blackList, {"score" : Math.floor(currentTime) ,"value" : req.headers.authorization}); //블랙리스트 삽입
+
             result.success  = true
             result.message = "비밀번호 변경 완료"
         }
+        res.send(result)
     }catch(err){
         console.log("PUT /account/modify-pw",err.message)
-        result.message = err.message
+        next(err)
     }finally{
         if(client) client.end()
-        res.send(result)
 
         req.resData = result //for logging
         next()
@@ -314,13 +316,16 @@ router.delete("/",auth.authCheck,async(req,res,next)=>{
             result.success  = true
             result.message = "계정 삭제 완료"
         }
+        res.send(result)
     }catch(err){
+        if(err.constraint === 'new_comment_usernum_fkey' || 'new_post_usernum_fkey'){
+            err.status = 409
+            err.message = err.constraint + " Error!"
+        }
         console.log("DELETE /account",err.message)
-        result.message = err.message
+        next(err)
     } finally{
         if(client) client.end()
-        res.send(result)
-
         req.resData = result //for logging
         next()
     }
