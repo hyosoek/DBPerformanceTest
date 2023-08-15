@@ -40,7 +40,7 @@ const logging = async(req,res) =>{
         }
         await conn.db("healthpartner").collection("log").insertOne(document)
     }catch(err){
-        console.log(`POST log Error : ${err.message}`)
+        console.log(`POST_ log Error : ${err.message}`)
     }finally{
         if(conn) conn.close()
     }
