@@ -6,7 +6,7 @@ const {Client} = require("pg")
 const db = require('../database.js');
 const auth = require('../middleware/authorization');
 
-const upload = require('../middleware/imageUpload');
+const imageProcess = require('../middleware/imageUpload');
 
 
 // load postlist
@@ -96,7 +96,8 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
         "title" : "",
         "detail": "",
         "date" : "",
-        "name" : ""
+        "name" : "",
+        "imageurl":""
     }
     let client = null
     try{
@@ -105,7 +106,8 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const sql = `SELECT name,postnum,title,date,detail,account.usernum FROM post 
+            const sql = `SELECT name,postnum,title,date,detail,account.usernum,imageurl 
+            FROM post 
             JOIN account ON post.usernum = account.usernum 
             WHERE postnum = $1;`
             const value = [postnum]
@@ -114,12 +116,15 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
             const row = data.rows
             if(row.length != 0){
                 result.success = true
-                    result.message = "게시글 가져오기 성공"
-                    result.title = row[0].title
-                    result.detail = row[0].detail
-                    result.date = row[0].date
-                    result.name = row[0].name
-            }else{
+                result.message = "게시글 가져오기 성공"
+                result.title = row[0].title
+                result.detail = row[0].detail
+                result.date = row[0].date
+                result.name = row[0].name
+                if(row[0].imageurl){
+                    result.imageurl = process.env.AwsBucketAddress + "post/" + row[0].imageurl    
+                }
+                }else{
                 result.message = "존재하지 않는 글입니다."
             }
         }
@@ -136,7 +141,7 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
 })
 
 // postWrite
-router.post("/",auth.userCheck,upload.single('image'),async(req,res,next)=>{
+router.post("/",auth.userCheck,imageProcess.upload.single('image'),async(req,res,next)=>{
     const {title,detail} = req.body;
     //auto date
     const result = {
@@ -176,7 +181,8 @@ router.post("/",auth.userCheck,upload.single('image'),async(req,res,next)=>{
 })
 
 // postFix
-router.put("/",auth.userCheck,async(req,res,next)=>{
+router.put("/",auth.userCheck,imageProcess.upload.single('image'),async(req,res,next)=>{
+    console.log(req.body)
     const {title,detail,postnum} = req.body; // 역시나 예외처리할 때 유저 고유 식별번호를 확인합니다.
     const result = {
         "success" : false,

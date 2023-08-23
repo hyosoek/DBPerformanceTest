@@ -12,7 +12,21 @@ let commentPageMaxCount = 0
 window.onload =() =>{
     loadCommentMaxCount() //둘다 처음에 사용되지만, loadpost는 재사용되므로,
     loadPost()
+    testEvent()
 }
+
+const testEvent =() =>{
+    document.getElementById("imageUrlCheckBtn").onclick = function(){
+        const str = document.getElementById("imageArea").src
+        if(str.endsWith("postPage")||str.endsWith("undefined")){
+            console.log("its null")
+        }else{
+            console.log("its not null")
+            console.log(str)
+        }
+    }
+}
+
 
 const loadCommentMaxCount = () =>{
     fetch(`/comment/count?postnum=${postnum}`,{
@@ -43,6 +57,9 @@ const loadPost = async() => {
     document.getElementById("postDate").innerText = result.date
     document.getElementById("postWriterName").innerText = result.name
     document.getElementById("postDetail").innerText = result.detail
+    if(result.imageurl){
+        document.getElementById("imageArea").src = result.imageurl
+    }
 
     loadComment()
 }
@@ -88,41 +105,93 @@ const loadAfterCommentPage = () =>{
 
 
 const fixPostInitEvent = async() =>{
-    
-        const postTitle = document.getElementById('postTitle');
-        const replaceTitle = document.createElement('textarea');
-        replaceTitle.id = "fixedTitle";
-        replaceTitle.innerText = postTitle.innerText;
-        var container = document.getElementById('titleArea');
-        container.replaceChild(replaceTitle, postTitle);
+    //이미지 조절 부분
+    const addImgBtn = document.createElement('input')
+    addImgBtn.id = "addImgBtn"
+    addImgBtn.type = "file"
+    addImgBtn.accept = "image/*"
 
-        const postDetail = document.getElementById('postDetail');
-        const replaceDetail = document.createElement('textarea');
-        replaceDetail.id = "fixedDetail"
-        replaceDetail.innerText = postDetail.innerText;
-        var container = document.getElementById('detailArea');
-        container.replaceChild(replaceDetail, postDetail);
-        replaceDetail.focus();
 
-        const fixBtn = document.getElementById('fixBtn');
-        fixBtn.value = "저장하기"
-        fixBtn.onclick = null
-        fixBtn.onclick = fixPostEvent
+    addImgBtn.addEventListener('change', () => {
+        file = addImgBtn.files[0];
+        if (file) {
+            const uploadedImage = document.getElementById("imageArea")
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                uploadedImage.src = event.target.result;
+                uploadedImage.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+
+    const deleteImgBtn = document.createElement('button')
+    deleteImgBtn.textContent = "이미지 삭제"
+    deleteImgBtn.onclick = function(){
+        document.getElementById("imageArea").src = ''
+        document.getElementById("addImgBtn").value = ''
+    }
+
+    document.getElementById('imageEditArea').appendChild(deleteImgBtn)
+    document.getElementById('imageEditArea').appendChild(addImgBtn)
     
+    //text data 부분
+    const postTitle = document.getElementById('postTitle');
+    const replaceTitle = document.createElement('textarea');
+    replaceTitle.id = "fixedTitle";
+    replaceTitle.innerText = postTitle.innerText;
+    var container = document.getElementById('titleArea');
+    container.replaceChild(replaceTitle, postTitle);
+
+    const postDetail = document.getElementById('postDetail');
+    const replaceDetail = document.createElement('textarea');
+    replaceDetail.id = "fixedDetail"
+    replaceDetail.innerText = postDetail.innerText;
+    var container = document.getElementById('detailArea');
+    container.replaceChild(replaceDetail, postDetail);
+    replaceDetail.focus();
+
+    const fixBtn = document.getElementById('fixBtn');
+    fixBtn.value = "저장하기"
+    fixBtn.onclick = null
+    fixBtn.onclick = fixPostEvent
 }   
+
+
 const fixPostEvent = async() =>{
+    let formData = new FormData();
+    formData.append("title",document.getElementById("fixedTitle").value)
+    formData.append("detail",document.getElementById("fixedDetail").value)
+    formData.append("postnum",postnum)
+
+
+    const imageFile = document.getElementById('addImgBtn');
+    let file = imageFile.files[0];
+    let removeImage = false
+
+    if(file){
+        formData.append('image', file);
+    }
+    else{ //파일이 없고
+        const str = document.getElementById("imageArea").src
+        console.log(str)
+        if(str.endsWith("postPage")||str.endsWith("undefined")){//이미지도 존재하지 않으면
+            console.log("??")
+            removeImage = true
+        }
+    }
+    formData.append("removeImage",removeImage)
+
+    console.log(formData)
+
+
     fetch("/post",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "PUT",
         "headers":{
-            "Content-Type":"application/json",
             'Authorization': getCookie("token")
-               
         },
-        "body":JSON.stringify({
-            "title" : document.getElementById("fixedTitle").value,
-            "detail": document.getElementById("fixedDetail").value,
-            "postnum": postnum
-        })
+        "body":formData
     }) 
     .then((response) => {
         return response.json()
