@@ -170,20 +170,20 @@ const fixPostEvent = async() =>{
     let file = imageFile.files[0];
     let removeImage = false
 
-    if(file){
-        formData.append('image', file);
-    }
-    else{ //파일이 없고
-        const str = document.getElementById("imageArea").src
-        console.log(str)
-        if(str.endsWith("postPage")||str.endsWith("undefined")){//이미지도 존재하지 않으면
-            console.log("??")
-            removeImage = true
-        }
-    }
-    formData.append("removeImage",removeImage)
+    // if(file){
+    //     formData.append('image', file);
+    // }
+    // else{ //파일이 없고
+    //     const str = document.getElementById("imageArea").src
+    //     console.log(str)
+    //     if(str.endsWith("postPage")||str.endsWith("undefined")){//이미지도 존재하지 않으면
+    //         console.log("??")
+    //         removeImage = true
+    //     }
+    // }
+    // formData.append("removeImage",removeImage)
 
-    console.log(formData)
+    // console.log(formData)
 
 
     fetch("/post",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
