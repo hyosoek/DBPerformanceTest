@@ -97,7 +97,7 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
         "detail": "",
         "date" : "",
         "name" : "",
-        "imageurl":""
+        "imageUrlList":[]
     }
     let client = null
     try{
@@ -122,7 +122,9 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
                 result.date = row[0].date
                 result.name = row[0].name
                 if(row[0].imageurl){
-                    result.imageurl = process.env.AwsBucketAddress + "post/" + row[0].imageurl    
+                    for(let i = 0 ; i < row[0].imageurl.length; i++){
+                        result.imageUrlList.push(process.env.AwsBucketAddress + "post/" + row[0].imageurl[i])    
+                    }
                 }
                 }else{
                 result.message = "존재하지 않는 글입니다."
@@ -141,7 +143,7 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
 })
 
 // postWrite
-router.post("/",auth.userCheck,imageProcess.upload.single('image'),async(req,res,next)=>{
+router.post("/",auth.userCheck,imageProcess.upload.array('images',5),async(req,res,next)=>{
     const {title,detail} = req.body;
     //auto date
     const result = {
@@ -160,9 +162,13 @@ router.post("/",auth.userCheck,imageProcess.upload.single('image'),async(req,res
             client.connect()
             const usernum = await req.decoded.userNum
             const sql = `INSERT INTO post(title,detail,usernum,imageurl) VALUES($1,$2,$3,$4);`
-            const initUrl = req.file.location
-            const modifiedUrl = initUrl.substring((process.env.AwsBucketAddress + "post/").length);
-            const value = [title, detail, usernum, modifiedUrl];
+            const imageUrlList = []
+            for(let i = 0;i<req.files.length;i++){
+                const modifiedUrl = req.files[i].location.substring((process.env.AwsBucketAddress + "post/").length);
+                imageUrlList.push(modifiedUrl)
+            }
+            
+            const value = [title, detail, usernum, imageUrlList];
             const data = await client.query(sql,value)
     
             result.success = true
@@ -181,8 +187,7 @@ router.post("/",auth.userCheck,imageProcess.upload.single('image'),async(req,res
 })
 
 // postFix
-router.put("/",auth.userCheck,imageProcess.upload.single('image'),async(req,res,next)=>{
-    console.log(req.body)
+router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(req,res,next)=>{
     const {title,detail,postnum} = req.body; // 역시나 예외처리할 때 유저 고유 식별번호를 확인합니다.
     const result = {
         "success" : false,
@@ -200,9 +205,36 @@ router.put("/",auth.userCheck,imageProcess.upload.single('image'),async(req,res,
         else{
             client = new Client(db.pgConnect)
             client.connect()
+            
+            await client.query('BEGIN');
+            const selectSql = 'SELECT imageurl FROM post WHERE postnum = $1'
+            const selectValue = [postnum]
+            const initData = await client.query(selectSql,selectValue);
+            const row = initData.rows[0].imageurl
+            const deleteUrlList = []
+            const newImageList = []
+            if(req.body.deleteList){
+                for(let i = 0; i < req.body.deleteList.length; i++){ //삭제해야 할 이미지의 인덱스 순서를 어떻게 보내줄 지 모르기 때문
+                    deleteUrlList.push(row[parseInt(req.body.deleteList[i])])
+                    row[parseInt(req.body.deleteList[i])] = null
+                }
+            }
+            for(let i = 0; i < row.length;i++){
+                if(row[i]!=null) newImageList.push(row[i]) // 삭제되지 않은 값은 넣어주기
+            }
+            for(let i = 0; i < req.files.length; i++){
+                newImageList.push(req.files[i].location.substring((process.env.AwsBucketAddress + "temp/").length))
+            }
+
+            if(newImageList > 5) {
+                const error = new Error("too many image error!")
+                error.status = 500
+                throw err
+            }
+
             const usernum = await req.decoded.userNum
-            const sql = `UPDATE post SET title = $1, detail = $2 WHERE postnum = $3 AND usernum = $4;`
-            const value = [title, detail, postnum,usernum];
+            const sql = `UPDATE post SET title = $1, detail = $2, imageurl = $3 WHERE postnum = $4 AND usernum = $5;`
+            const value = [title, detail,newImageList, postnum, usernum];
             const data = await client.query(sql,value)
 
             if(data.rowCount == 0 ){
@@ -211,10 +243,20 @@ router.put("/",auth.userCheck,imageProcess.upload.single('image'),async(req,res,
                 throw err
             }
             result.success = true
-            result.message = "게시글 수정 성공" 
+            result.message = "게시글 수정 성공"
+            await client.query('COMMIT');
+
+            for(let i = 0 ;i < req.files.length;i++){ // temp에 있는 걸 옮겨주기
+                imageProcess.passImage(req.files[i].location.substring((process.env.AwsBucketAddress + "temp/").length))
+            }
+            for(let i = 0 ;i < deleteUrlList.length; i++){ // 기존에 있던 것 중 삭제할 것 삭제
+                imageProcess.deleteImage(deleteUrlList[i])
+            }
         }        
-        res.send(result)           
+        res.send(result)
+
     }catch(err){
+        await client.query('ROLLBACK');
         console.log("PUT /post",err.message)
         next(err)
     }finally{

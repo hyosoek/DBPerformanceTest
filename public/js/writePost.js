@@ -1,4 +1,4 @@
-let file = null
+let files = []
 
 window.onload = () =>{
     document.getElementById("finBtn").onclick = writePostEvent
@@ -12,10 +12,9 @@ const writePostEvent = async() =>{
     formData.append("title",document.getElementById("title").value)
     formData.append("detail",document.getElementById("detail").value)
 
-    if(file){
-        formData.append('image', file);
-        for (const entry of formData.entries()) {
-            console.log(entry);
+    if(files){
+        for (let i = 0; i < files.length; i++) {
+            formData.append('images', files[i]);
         }
     }
     
@@ -38,18 +37,18 @@ const writePostEvent = async() =>{
 
 const imageUploadEvnet = async() =>{
     const imageInput = document.getElementById('imageInput');
-    const uploadedImage = document.getElementById('uploadedImage');
+    const imageContainer = document.getElementById('imageContainer');
     imageInput.addEventListener('change', () => {
-        file = imageInput.files[0];
-        if (file) {
-            const reader = new FileReader();
+        if(files.length < 5){
+            const file = imageInput.files[0] 
+            files.push(file)
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.style.maxWidth = '200px';
+            img.style.margin = '5px';
+            imageContainer.appendChild(img);
     
-            reader.onload = (event) => {
-                uploadedImage.src = event.target.result;
-                uploadedImage.style.display = 'block';
-            };
-    
-            reader.readAsDataURL(file);
+            console.log(files)
         }
     });
 }

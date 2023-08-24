@@ -7,25 +7,25 @@ let commentPageNum = 1
 let commentPageMaxCount = 0
 //전역변수는 프론트엔드가 알아서 해줄 것임.
 
-//promise 쓰지 말아보자
+let imgDeleteList = []
+let imgAddList = []
 
 window.onload =() =>{
     loadCommentMaxCount() //둘다 처음에 사용되지만, loadpost는 재사용되므로,
     loadPost()
-    testEvent()
 }
 
-const testEvent =() =>{
-    document.getElementById("imageUrlCheckBtn").onclick = function(){
-        const str = document.getElementById("imageArea").src
-        if(str.endsWith("postPage")||str.endsWith("undefined")){
-            console.log("its null")
-        }else{
-            console.log("its not null")
-            console.log(str)
-        }
-    }
-}
+// const testEvent =() =>{
+//     document.getElementById("imageUrlCheckBtn").onclick = function(){
+//         const str = document.getElementById("imageArea").src
+//         if(str.endsWith("postPage")||str.endsWith("undefined")){
+//             console.log("its null")
+//         }else{
+//             console.log("its not null")
+//             console.log(str)
+//         }
+//     }
+// }
 
 
 const loadCommentMaxCount = () =>{
@@ -57,8 +57,20 @@ const loadPost = async() => {
     document.getElementById("postDate").innerText = result.date
     document.getElementById("postWriterName").innerText = result.name
     document.getElementById("postDetail").innerText = result.detail
-    if(result.imageurl){
-        document.getElementById("imageArea").src = result.imageurl
+    const imageContainer = document.getElementById("imageArea")
+
+    console.log(result.imageUrlList[0])
+    console.log(result.imageUrlList[1])
+
+    if(result.imageUrlList){
+        for(let i = 0 ; i < result.imageUrlList.length; i++){
+            const img = document.createElement('img');
+            img.src = result.imageUrlList[i]
+            img.style.maxWidth = '200px';
+            img.style.margin = '5px';
+            img.id = "img" + (i+1)
+            imageContainer.appendChild(img);
+        }
     }
 
     loadComment()
@@ -113,27 +125,37 @@ const fixPostInitEvent = async() =>{
 
 
     addImgBtn.addEventListener('change', () => {
-        file = addImgBtn.files[0];
-        if (file) {
-            const uploadedImage = document.getElementById("imageArea")
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                uploadedImage.src = event.target.result;
-                uploadedImage.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
+        if(document.getElementById("imageArea").childElementCount < 5){
+            const file = addImgBtn.files[0]
+            imgAddList.push(file)
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.style.maxWidth = '200px';
+            img.style.margin = '5px';
+              
+            img.onclick = function(){
+                const indexToRemove = imgAddList.findIndex(item => item === file);
+                imgAddList.splice(indexToRemove,1)
+                document.getElementById("imageArea").removeChild(img)
+            }
+            document.getElementById("imageArea").appendChild(img);
         }
+        console.log(imgDeleteList)
+        console.log(imgAddList)
     });
 
-
-    const deleteImgBtn = document.createElement('button')
-    deleteImgBtn.textContent = "이미지 삭제"
-    deleteImgBtn.onclick = function(){
-        document.getElementById("imageArea").src = ''
-        document.getElementById("addImgBtn").value = ''
+    for(let i = 0 ; i < 5; i++){ // 5가 아니라 변수로 해야하는데 귀찮음.
+        const img = document.getElementById("img"+(i+1))
+        if(img){
+            img.onclick = function(){
+                document.getElementById("imageArea").removeChild(img)
+                imgDeleteList.push(i)
+                console.log(imgDeleteList)
+                console.log(imgAddList)
+            }
+        }
     }
 
-    document.getElementById('imageEditArea').appendChild(deleteImgBtn)
     document.getElementById('imageEditArea').appendChild(addImgBtn)
     
     //text data 부분
@@ -166,25 +188,17 @@ const fixPostEvent = async() =>{
     formData.append("postnum",postnum)
 
 
-    const imageFile = document.getElementById('addImgBtn');
-    let file = imageFile.files[0];
-    let removeImage = false
+    if(imgAddList){
+        for (let i = 0; i < imgAddList.length; i++) {
+            formData.append('images', imgAddList[i]);
+        }
+    }
 
-    // if(file){
-    //     formData.append('image', file);
-    // }
-    // else{ //파일이 없고
-    //     const str = document.getElementById("imageArea").src
-    //     console.log(str)
-    //     if(str.endsWith("postPage")||str.endsWith("undefined")){//이미지도 존재하지 않으면
-    //         console.log("??")
-    //         removeImage = true
-    //     }
-    // }
-    // formData.append("removeImage",removeImage)
-
-    // console.log(formData)
-
+    if(imgDeleteList){
+        for (let i = 0; i < imgDeleteList.length; i++) {
+            formData.append('deleteList', imgDeleteList[i]);
+        }
+    }
 
     fetch("/post",{// get빼고 이거 3개는 전부 이렇게 해주기 //Get은 body를 못 넣어줌
         "method" : "PUT",

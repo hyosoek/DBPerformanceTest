@@ -18,20 +18,45 @@ const upload = multer({
       acl: 'public-read',
       contentType: multerS3.AUTO_CONTENT_TYPE,
       key: function (req, file, cb) {
-        cb(null, 'post/' + Date.now() + '-' + file.originalname);
+        const fileName = `${Date.now()}_${Math.round(Math.random() * 1E9)}`;
+        cb(null, 'post/' + Date.now() + `${fileName}${path.extname(file.originalname)}`);
       }
     }),
     limits: { fileSize: 5 * 1024 * 1024 } // 용량 제한 설정
-  });
+  })
 
-function deleteImage(fileName)  {
-    const fileDir = 'post'
+const uploadTemp = multer({
+    storage: multerS3({
+      s3: s3,
+      bucket: process.env.AwsBucketName,
+      acl: 'public-read',
+      contentType: multerS3.AUTO_CONTENT_TYPE,
+      key: function (req, file, cb) {
+        const fileName = `${Date.now()}_${Math.round(Math.random() * 1E9)}`;
+        cb(null, 'temp/' + Date.now() + `${fileName}${path.extname(file.originalname)}`);
+      }
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 } // 용량 제한 설정
+  })
+
+const passImage = async(fileName) =>{
+    await s3.copyObject({
+        Bucket: `${process.env.AwsBucketName}/post`,
+        CopySource: `/${process.env.AwsBucketName}/temp/${fileName}`,
+        Key: `${fileName}`,
+        ACL: 'public-read'
+    }).promise();
+}
+
+
+const deleteImage = async(fileName) => {
+    //const fileDir = 'post'
     let params = {
-        Bucket: process.env.AwsBucketName,
-        Key: fileDir.concat('/', fileName)
+        Bucket: `${process.env.AwsBucketName}/post`,
+        Key: `${fileName}`,
     }
     try {
-        // s3.deleteObject(params)        
+        await s3.deleteObject(params)        
     } catch(err) {
         err.status = 500
         err.message = ("s3 access Error")
@@ -41,4 +66,4 @@ function deleteImage(fileName)  {
 
   
   
-module.exports = {upload,deleteImage};
+module.exports = {upload,uploadTemp,deleteImage,passImage};
