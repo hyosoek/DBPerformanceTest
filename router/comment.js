@@ -155,7 +155,7 @@ router.put("/",auth.userCheck,async(req,res,next)=>{
             if(data.rowCount == 0 ){
                 const error = new Error("No Auth to Update Data!")
                 error.status = 403
-                throw err
+                throw error
             }
             result.success = true
             result.message = "수정 완료"
@@ -192,7 +192,7 @@ router.delete("/",auth.userCheck,async(req,res,next)=>{
             if(data.rowCount == 0 ){
                 const error = new Error("No Auth to Delete Data!")
                 error.status = 403
-                throw err
+                throw error
             }
             result.success = true
             result.message = "삭제 완료"

@@ -219,6 +219,7 @@ const fixPostEvent = async() =>{
         else{
             console.log(result)
             alert("권한이 없습니다.")
+            window.location.href = '/postPage'
         }
     })
 }

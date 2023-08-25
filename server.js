@@ -54,9 +54,11 @@ app.use('/visitor', visitorApi);
 
 app.use(log.logging)
 
+app.use(function (err, req, res, next) {
+    errorHandler.errorPass(err,req,res)
+  });
 app.use(errorHandler.error404Pass);
 
-app.use(errorHandler.errorPass)
 
 //서버 시작
 app.listen(8000,async() => {

@@ -64,18 +64,15 @@ const deleteImage = async(fileName) => {
 }
 
 const clearTempImage = async(fileList) => {
-    const deleteParams = {
-        Bucket: process.env.AwsBucketName,
+    const deleteObjectsParams = {
+        Bucket: process.env.AwsBucketNameTemp,
         Delete: {
-          Objects: null,
+          Objects: fileList.map(fileName => ({ Key: fileName })),
           Quiet: false
         }
-    }
+    };
     try {
-        const response = await s3.listObjectsV2(loadParams).promise();
-        deleteParams.Delete.Objects = response.Contents.map(obj => ({ Key: obj.Key }))
-        await s3.deleteObject(deleteParams).promise(); 
-        console.log(deleteParams.Delete.Objects)
+        await s3.deleteObjects(deleteObjectsParams).promise();
     } catch(err) {
         err.status = 500
         err.message = ("s3 access Error")

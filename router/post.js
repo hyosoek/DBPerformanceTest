@@ -194,6 +194,8 @@ router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(re
         "message" : ""
     }
     let client = null
+    const newImageList = []
+    const deleteUrlList = []
     try{
         const titleCheck = new inputCheck(title)
         const detailCheck = new inputCheck(detail)
@@ -211,8 +213,6 @@ router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(re
             const selectValue = [postnum]
             const initData = await client.query(selectSql,selectValue);
             const row = initData.rows[0].imageurl
-            const deleteUrlList = []
-            const newImageList = []
             if(req.body.deleteList){
                 for(let i = 0; i < req.body.deleteList.length; i++){ //삭제해야 할 이미지의 인덱스 순서를 어떻게 보내줄 지 모르기 때문
                     deleteUrlList.push(row[parseInt(req.body.deleteList[i])])
@@ -229,7 +229,7 @@ router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(re
             if(newImageList > 5) {
                 const error = new Error("too many image error!")
                 error.status = 500
-                throw err
+                throw error
             }
 
             const usernum = await req.decoded.userNum
@@ -240,7 +240,7 @@ router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(re
             if(data.rowCount == 0 ){
                 const error = new Error("No Auth to Update Data!")
                 error.status = 403
-                throw err
+                throw error
             }
             result.success = true
             result.message = "게시글 수정 성공"
@@ -262,7 +262,7 @@ router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(re
         console.log("PUT /post",err.message)
         next(err)
     }finally{
-        imageProcess.clearTempImage()
+        imageProcess.clearTempImage(newImageList)
         if(client) client.end()
         req.resData = result //for logging
         next()
@@ -294,7 +294,7 @@ router.delete("/",auth.userCheck,async(req,res,next)=>{
             if(data.rowCount == 0 ){
                 const error = new Error("No Auth to Delete Data!")
                 error.status = 403
-                throw err
+                throw error
             }
 
             result.success = true
