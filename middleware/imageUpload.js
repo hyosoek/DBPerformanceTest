@@ -19,7 +19,7 @@ const upload = multer({
       contentType: multerS3.AUTO_CONTENT_TYPE,
       key: function (req, file, cb) {
         const fileName = `${Date.now()}_${Math.round(Math.random() * 1E9)}`;
-        cb(null, 'post/' + Date.now() + `${fileName}${path.extname(file.originalname)}`);
+        cb(null, Date.now() + `${fileName}${path.extname(file.originalname)}`);
       }
     }),
     limits: { fileSize: 5 * 1024 * 1024 } // 용량 제한 설정
@@ -28,12 +28,12 @@ const upload = multer({
 const uploadTemp = multer({
     storage: multerS3({
       s3: s3,
-      bucket: process.env.AwsBucketName,
+      bucket: process.env.AwsBucketNameTemp,
       acl: 'public-read',
       contentType: multerS3.AUTO_CONTENT_TYPE,
       key: function (req, file, cb) {
         const fileName = `${Date.now()}_${Math.round(Math.random() * 1E9)}`;
-        cb(null, 'temp/' + Date.now() + `${fileName}${path.extname(file.originalname)}`);
+        cb(null, Date.now() + `${fileName}${path.extname(file.originalname)}`);
       }
     }),
     limits: { fileSize: 5 * 1024 * 1024 } // 용량 제한 설정
@@ -41,8 +41,8 @@ const uploadTemp = multer({
 
 const passImage = async(fileName) =>{
     await s3.copyObject({
-        Bucket: `${process.env.AwsBucketName}/post`,
-        CopySource: `/${process.env.AwsBucketName}/temp/${fileName}`,
+        Bucket: `${process.env.AwsBucketName}`,
+        CopySource: `/${process.env.AwsBucketNameTemp}/${fileName}`,
         Key: `${fileName}`,
         ACL: 'public-read'
     }).promise();
@@ -50,13 +50,12 @@ const passImage = async(fileName) =>{
 
 
 const deleteImage = async(fileName) => {
-    //const fileDir = 'post'
-    let params = {
-        Bucket: `${process.env.AwsBucketName}/post`,
-        Key: `${fileName}`,
+    const params = {
+        Bucket: `${process.env.AwsBucketName}`,
+        Key: fileName
     }
     try {
-        await s3.deleteObject(params)        
+        await s3.deleteObject(params).promise();    
     } catch(err) {
         err.status = 500
         err.message = ("s3 access Error")
@@ -64,6 +63,26 @@ const deleteImage = async(fileName) => {
     }
 }
 
+const clearTempImage = async(fileList) => {
+    const deleteParams = {
+        Bucket: process.env.AwsBucketName,
+        Delete: {
+          Objects: null,
+          Quiet: false
+        }
+    }
+    try {
+        const response = await s3.listObjectsV2(loadParams).promise();
+        deleteParams.Delete.Objects = response.Contents.map(obj => ({ Key: obj.Key }))
+        await s3.deleteObject(deleteParams).promise(); 
+        console.log(deleteParams.Delete.Objects)
+    } catch(err) {
+        err.status = 500
+        err.message = ("s3 access Error")
+        return err
+    }
+}
+
   
   
-module.exports = {upload,uploadTemp,deleteImage,passImage};
+module.exports = {upload,uploadTemp,deleteImage,passImage,clearTempImage};

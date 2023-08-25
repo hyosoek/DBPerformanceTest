@@ -123,7 +123,7 @@ router.get("/",auth.userCheck,async(req,res,next)=>{
                 result.name = row[0].name
                 if(row[0].imageurl){
                     for(let i = 0 ; i < row[0].imageurl.length; i++){
-                        result.imageUrlList.push(process.env.AwsBucketAddress + "post/" + row[0].imageurl[i])    
+                        result.imageUrlList.push(process.env.AwsBucketAddress + row[0].imageurl[i])    
                     }
                 }
                 }else{
@@ -164,7 +164,7 @@ router.post("/",auth.userCheck,imageProcess.upload.array('images',5),async(req,r
             const sql = `INSERT INTO post(title,detail,usernum,imageurl) VALUES($1,$2,$3,$4);`
             const imageUrlList = []
             for(let i = 0;i<req.files.length;i++){
-                const modifiedUrl = req.files[i].location.substring((process.env.AwsBucketAddress + "post/").length);
+                const modifiedUrl = req.files[i].location.substring((process.env.AwsBucketAddress).length);
                 imageUrlList.push(modifiedUrl)
             }
             
@@ -222,8 +222,8 @@ router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(re
             for(let i = 0; i < row.length;i++){
                 if(row[i]!=null) newImageList.push(row[i]) // 삭제되지 않은 값은 넣어주기
             }
-            for(let i = 0; i < req.files.length; i++){
-                newImageList.push(req.files[i].location.substring((process.env.AwsBucketAddress + "temp/").length))
+            for(let i = 0; i < req.files.length; i++){ //새로들어온 이미지를 temp에 넣어둔 것
+                newImageList.push(req.files[i].location.substring((process.env.AwsBucketAddressTemp).length))
             }
 
             if(newImageList > 5) {
@@ -247,10 +247,12 @@ router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(re
             await client.query('COMMIT');
 
             for(let i = 0 ;i < req.files.length;i++){ // temp에 있는 걸 옮겨주기
-                imageProcess.passImage(req.files[i].location.substring((process.env.AwsBucketAddress + "temp/").length))
+                imageProcess.passImage(req.files[i].location.substring((process.env.AwsBucketAddressTemp).length))
             }
+            
             for(let i = 0 ;i < deleteUrlList.length; i++){ // 기존에 있던 것 중 삭제할 것 삭제
-                imageProcess.deleteImage(deleteUrlList[i])
+                console.log(deleteUrlList[i])
+                imageProcess.deleteImage(deleteUrlList[i],"post")
             }
         }        
         res.send(result)
@@ -260,6 +262,7 @@ router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(re
         console.log("PUT /post",err.message)
         next(err)
     }finally{
+        imageProcess.clearTempImage()
         if(client) client.end()
         req.resData = result //for logging
         next()
