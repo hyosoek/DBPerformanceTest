@@ -28,7 +28,6 @@ const error404Pass = (req, res, next)=>{
     catch(err){
         err.status = 404;
         err.message = "404 NOT found"
-    } finally{
         next(err);
     }
 }

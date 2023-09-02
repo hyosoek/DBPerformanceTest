@@ -49,11 +49,12 @@ const passImage = async(fileName) =>{
 }
 
 
-const deleteImage = async(fileName) => {
+const deleteImage = async(fileName,bucketName) => {
     const params = {
-        Bucket: `${process.env.AwsBucketName}`,
+        Bucket: bucketName,
         Key: fileName
     }
+
     try {
         await s3.deleteObject(params).promise();    
     } catch(err) {
@@ -63,9 +64,10 @@ const deleteImage = async(fileName) => {
     }
 }
 
-const clearTempImage = async(fileList) => {
+
+const clearImages = async(fileList,bucketName) => {
     const deleteObjectsParams = {
-        Bucket: process.env.AwsBucketNameTemp,
+        Bucket: bucketName,
         Delete: {
           Objects: fileList.map(fileName => ({ Key: fileName })),
           Quiet: false
@@ -82,4 +84,4 @@ const clearTempImage = async(fileList) => {
 
   
   
-module.exports = {upload,uploadTemp,deleteImage,passImage,clearTempImage};
+module.exports = {upload,uploadTemp,deleteImage,passImage,clearImages};

@@ -252,7 +252,7 @@ router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(re
             
             for(let i = 0 ;i < deleteUrlList.length; i++){ // 기존에 있던 것 중 삭제할 것 삭제
                 console.log(deleteUrlList[i])
-                imageProcess.deleteImage(deleteUrlList[i],"post")
+                imageProcess.deleteImage(deleteUrlList[i],process.env.AwsBucketName)
             }
         }        
         res.send(result)
@@ -262,13 +262,11 @@ router.put("/",auth.userCheck,imageProcess.uploadTemp.array('images',5),async(re
         console.log("PUT /post",err.message)
         next(err)
     }finally{
-        imageProcess.clearTempImage(newImageList)
+        imageProcess.clearImages(newImageList,process.env.AwsBucketNameTemp)
         if(client) client.end()
         req.resData = result //for logging
         next()
     }
-    
-    
 })
 
 // postDelete
@@ -285,7 +283,7 @@ router.delete("/",auth.userCheck,async(req,res,next)=>{
         else{
             client = new Client(db.pgConnect)
             client.connect()
-            const sql = `DELETE FROM post WHERE postnum = $1 AND usernum = $2;`
+            const sql = `DELETE FROM post WHERE postnum = $1 AND usernum = $2 RETURNING imageurl;`
             const usernum = await req.decoded.userNum
             const value = [postnum,usernum]
             console.log(postnum,usernum)
@@ -296,6 +294,9 @@ router.delete("/",auth.userCheck,async(req,res,next)=>{
                 error.status = 403
                 throw error
             }
+            //성공적으로 지워졌다면 s3도 비워주기   
+
+            imageProcess.clearImages(data.rows[0].imageurl,process.env.AwsBucketName)
 
             result.success = true
             result.message = "게시글 삭제 성공"  
