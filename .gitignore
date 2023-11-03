@@ -147,4 +147,7 @@ package-lock.json
 #node_modules
 node_modules
 
+#pem
+.pem
+
 # End of https://www.toptal.com/developers/gitignore/api/node

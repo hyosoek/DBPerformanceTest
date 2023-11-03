@@ -2,9 +2,8 @@ const router = require("express").Router()
 const inputCheck = require("../module/inputCheck.js");
 
 const {Client} = require("pg")
-const db = require('../database.js');
+const db = require('../../config/database.js');
 const verify = require("../middleware/verify.js");
-const loginCounter = require("../module/loginCounter.js");
 const auth = require('../middleware/authorization');
 const redis = require("redis").createClient();
 
@@ -20,25 +19,22 @@ router.post("/log-in",async(req,res,next)=>{
     }
     let client = null;
     try{
-        const mailCheck = new inputCheck(mail)
-        const pwCheck = new inputCheck(pw)
-        if (mailCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = mailCheck.errMessage
-        if(pwCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = pwCheck.errMessage
-        else{
-            client = new Client(db.pgConnect)
-            client.connect()
-            const sql = "SELECT id FROM account WHERE mail=$1 AND pw = $2;"
-            const values = [mail,pw]
-            const data = await client.query(sql,values)
-            const row = data.rows
-    
-            if(row.length != 0) {
-                result.success  = true
-                result.message = "로그인 성공"
-                // result.token = await verify.publishToken(row[0])
-            } else{
-                result.message = "로그인 실패"
-            }
+        inputCheck(mail).isMinSize(4).isMaxSize(31).isMail().isEmpty()
+        inputCheck(pw).isMinSize(4).isMaxSize(31).isEmpty()
+
+        client = new Client(db.pgConnect)
+        client.connect()
+        const sql = "SELECT id FROM account WHERE mail=$1 AND pw = $2;"
+        const values = [mail,pw]
+        const data = await client.query(sql,values)
+        const row = data.rows
+        
+        if(row.length != 0) {
+            result.success  = true
+            result.message = "로그인 성공"
+            result.token = await verify.publishToken(row[0])
+        } else{
+            result.message = "로그인 실패"
         }
         res.send(result)
     }catch(err){
@@ -46,8 +42,8 @@ router.post("/log-in",async(req,res,next)=>{
         next(err)
     } finally{
         if(client) client.end()
-        req.resData = result //for logging
-        next()
+        //req.resData = result //for logging
+        //next() //이제 log 없어서 필요 없음
     }
        
 })
@@ -63,7 +59,7 @@ router.get("/log-out",auth.authCheck,async(req,res,next)=>{
 
         await redis.connect()
         const currentTime = new Date()
-        await redis.zAdd(process.env.blackList, {"score" : Math.floor(currentTime) ,"value" : req.headers.authorization}); //블랙리스트 삽입
+        await redis.zAdd(process.env.blackList, {"score" : Math.floor(currentTime) ,"value" : req.headers.authorization}) //블랙리스트 삽입
 
         //토큰 블랙리스트(blacklist) 처리
         res.send(result)

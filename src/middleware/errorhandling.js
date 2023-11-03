@@ -11,8 +11,8 @@ const errorPass = (err,req,res) =>{
             err.message = "Server Error!"
         }
 
-        result.message = err.message; // 
-        console.error("Error_"+err.status +" : "+err.message);
+        result.message = err.message; //status를 지정해서 발생하는 오류는 반드시 메시지를 적어서 보내줘야 합니다! 
+        console.error("Error"+err.status +" : "+err.message);
         res.status(err.status).send(result);
     }
     catch(newerr){ // 혹시 모르는 에러 발생
@@ -22,14 +22,11 @@ const errorPass = (err,req,res) =>{
 }
 
 const error404Pass = (req, res, next)=>{
-    try{
-        throw new Error();
+    const result = {
+        "success" : false,
+        "message" : "404 NOT found!"
     }
-    catch(err){
-        err.status = 404;
-        err.message = "404 NOT found"
-        next(err);
-    }
+    res.status(404).send(result);
 }
 
 module.exports = {errorPass,error404Pass}
