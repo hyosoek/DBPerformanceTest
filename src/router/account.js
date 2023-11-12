@@ -3,13 +3,14 @@ const inputCheck = require("../module/inputCheck.js");
 
 const {Client} = require("pg")
 const db = require('../../config/database.js');
-const verify = require("../middleware/verify.js");
-const auth = require('../middleware/authorization');
+const verify = require("../middleware/tokenVerify.js");
+const auth = require('../middleware/authorization.js');
 const redis = require("redis").createClient();
 
-
+const mailCertification = require('../module/mailCertification.js');
 
 // 로그인
+
 router.post("/log-in",async(req,res,next)=>{
     const {mail,pw} = req.body;
     const result = {
@@ -19,22 +20,21 @@ router.post("/log-in",async(req,res,next)=>{
     }
     let client = null;
     try{
-        inputCheck(mail).isMinSize(4).isMaxSize(31).isMail().isEmpty()
+        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
         inputCheck(pw).isMinSize(4).isMaxSize(31).isEmpty()
 
         client = new Client(db.pgConnect)
         client.connect()
-        const sql = "SELECT id FROM account WHERE mail=$1 AND pw = $2;"
+        const sql = `SELECT id FROM account WHERE mail=$1 AND pw = $2;`
         const values = [mail,pw]
         const data = await client.query(sql,values)
         const row = data.rows
         
         if(row.length != 0) {
             result.success  = true
-            result.message = "로그인 성공"
             result.token = await verify.publishToken(row[0])
         } else{
-            result.message = "로그인 실패"
+            result.message = "No-exist email"
         }
         res.send(result)
     }catch(err){
@@ -44,166 +44,178 @@ router.post("/log-in",async(req,res,next)=>{
         if(client) client.end()
         //req.resData = result //for logging
         //next() //이제 log 없어서 필요 없음
+    } 
+})
+
+router.get("/sign-up/send-mail",async(req,res,next)=>{3
+    const { mail } = req.query;
+    const result = {
+        "success" : false,
+        "message" : ""
+    }
+    let client = null;
+    try{
+        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
+        client = new Client(db.pgConnect)
+        client.connect()
+        const sql = `SELECT count(*) FROM account WHERE mail=$1;`
+        const values = [mail]
+        const data = await client.query(sql,values)
+        const row = data.rows
+
+        if(row[0].count == 0){
+            result.success = true
+            mailCertification.sending(mail)
+            result.message = "Send Certification Number"
+        }else{
+            result.message = "Already exist mail"
+        }
+        res.send(result)
+    }catch(err){
+        console.log("GET /account/sign-up/send-mail", err.message)
+        next(err)
+    } finally{
+        if(client) client.end()
+    }    
+})
+
+router.get("/sign-up/certification",async(req,res,next)=>{3
+    const { mail,code } = req.query;
+    const result = {
+        "success" : false,
+        "message" : ""
+    }
+    try{
+        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
+        inputCheck(code).isMinSize(0).isMaxSize(7).isEmpty()
+        const certCheck = await mailCertification.certification(mail,code)
+        if(certCheck){
+            result.success = true;
+            result.message = "Certification Success"
+        }else{
+            result.message = "Not match code!"
+        }
+        res.send(result)
+    }catch(err){
+        console.log("GET /account/sign-up/certification", err.message)
+        next(err)
+    }
+})
+
+router.get("/duplicate-nickname",async(req,res,next)=>{
+    const {nickname} = req.query;
+    const result = {
+        "success" : false,
+        "message" : ""
+    }
+    let client = null;
+    try{
+        inputCheck(nickname).isMinSize(4).isMaxSize(31).isEmpty()
+
+        client = new Client(db.pgConnect)
+        client.connect()
+        const sql = `SELECT count(*) FROM account WHERE nickname=$1`
+        const values = [nickname]
+        const data = await client.query(sql,values)
+        const row = data.rows
+        
+        if(row[0].count != 0) { // 존재하지 않는 
+            result.message = "Already exist nickname!"
+        } else{
+            result.success  = true
+        }
+        res.send(result)
+    }catch(err){
+        console.log("GET /account/duplicate-nickname", err.message) // 이건 해주는게 맞음
+        next(err)
+    } finally{
+        if(client) client.end()
     }
        
 })
-//로그아웃
+
+router.post("/",async(req,res,next)=>{
+    const {mail,pw1,pw2,nickname} = req.body;
+    const result = {
+        "success" : false,
+        "message" : ""
+    }
+    let client = null;
+    try{
+        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
+        inputCheck(pw1).isMinSize(4).isMaxSize(31).isEmpty().isEqual(pw2)
+        inputCheck(nickname).isMinSize(4).isMaxSize(31).isEmpty()
+
+        client = new Client(db.pgConnect)
+        client.connect()
+        const sql = `INSERT INTO account (mail,pw,nickname) VALUES ($1,$2,$3);` // 트랜잭션 체크를 할까...?
+        const values = [mail,pw1,nickname]
+        const data = await client.query(sql,values)
+        const row = data.rows
+        
+        result.success = true;
+        res.send(result)
+    }catch(err){
+        if(err.code == "23505") {
+            err.status = 422
+            err.message = "Data Duplicate!"
+        }
+        console.log("POST /account", err.message)
+        next(err)
+    } finally{
+        if(client) client.end()
+    } 
+})
+
 router.get("/log-out",auth.authCheck,async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : ""
     }
     try{
-        result.success = true
-        res.clearCookie("token")
-
-        await redis.connect()
-        const currentTime = new Date()
-        await redis.zAdd(process.env.blackList, {"score" : Math.floor(currentTime) ,"value" : req.headers.authorization}) //블랙리스트 삽입
-
-        //토큰 블랙리스트(blacklist) 처리
-        res.send(result)
+        throw Error()
     }catch(err){
+        err.status = 501;
+        err.message = "Log-out function Not exist!"
         console.log("POST /account/log-out", err.message)
         next(err)
-    } finally{
-        redis.disconnect()
-        req.resData = result //for logging
-        next()
-    }    
+    } 
 })
 
-// 회원가입 - 아이디 중복체크
-router.get("/id-exist",async(req,res,next)=>{ //아이디 중복체크
-    const {id} = req.query;
+router.get("/find-pw/send-mail",async(req,res,next)=>{
+    const { mail } = req.query;
     const result = {
         "success" : false,
         "message" : ""
     }
     let client = null;
     try{
-        const idCheck = new inputCheck(id)
-        if (idCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = idCheck.errMessage
-        else{
-            client = new Client(db.pgConnect)
-            client.connect()
-            const sql = "SELECT COUNT(*) AS count FROM account WHERE id=$1;"
-            const values = [id]
-            const data = await client.query(sql,values)
+        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
+        client = new Client(db.pgConnect)
+        client.connect()
+        const sql = `SELECT count(*) FROM account WHERE mail=$1;`
+        const values = [mail]
+        const data = await client.query(sql,values)
+        const row = data.rows
 
-            const row = data.rows
-
-            if(parseInt(row[0].count) == 0) {
-                result.success  = true
-                result.message = "사용가능한 아이디입니다."
-            } else{
-                result.message = "이미 존재하는 id입니다."
-            }
+        if(row[0].count != 0){
+            result.success = true
+            mailCertification.sending(mail)
+            result.message = "Send Certification Number"
+        }else{
+            result.message = "No exist mail"
         }
         res.send(result)
     }catch(err){
-        console.log("GET /account/id-exist/",err.message)
-        result.message = err.message
-    }finally{
-        if(client) client.end()
-        req.resData = result //for logging
-        next()
-    }
-    
-})
-// 회원가입
-router.post("/",async(req,res,next)=>{
-    const {id,pw1,pw2,name,mail,birth,contact} = req.body;
-    const result = {
-        "success" : false,
-        "message" : "",
-    }
-    let client = null;
-    try{
-        const idCheck = new inputCheck(id)
-        const pwCheck = new inputCheck(pw1)
-        const nameCheck = new inputCheck(name)
-        const mailCheck = new inputCheck(mail)
-        const birthCheck = new inputCheck(birth)
-        const contactCheck = new inputCheck(contact)
-
-        if (idCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = idCheck.errMessage
-        else if(pwCheck.isMinSize(4).isMaxSize(31).isSameWith(pw2).isEmpty().result != true) result.message = pwCheck.errMessage
-        else if(nameCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = nameCheck.errMessage
-        else if(mailCheck.isMinSize(4).isMaxSize(31).isMail().isEmpty().result != true) result.message = mailCheck.errMessage
-        else if(birthCheck.isMinSize(4).isMaxSize(31).isDate().isEmpty().result != true) result.message = birthCheck.errMessage
-        else if(contactCheck.isMinSize(4).isMaxSize(31).isContact().isEmpty().result != true) result.message = contactCheck.errMessage
-        else{
-            client = new Client(db.pgConnect)
-            client.connect()
-            const sql = "INSERT INTO account(id,pw,name,mail,birth,contact) VALUES($1,$2,$3,$4,$5,$6);"
-            const values = [id,pw1,name,mail,birth,contact]
-            const data = await client.query(sql,values)
-
-            result.success  = true
-            result.message = "회원가입 성공" 
-        }
-        res.send(result)
-    }catch(err){
-        if(err.code == 23505){
-            err.status = 409
-            err.message = "Unique Value Fail!"
-        } // unique fail이 아니면, 자동으로 500처리
-        console.log("POST /account",err.message)
+        console.log("GET /account/find-pw/send-mail", err.message)
         next(err)
-    }finally{
+    } finally{
         if(client) client.end()
-        req.resData = result //for logging
-        next()
-    }
+    }    
 })
-// 아이디 찾기
-router.get("/find-id",async(req,res,next)=>{
-    const {name,mail} = req.query; // 받아옴
-    const result = {
-        "success" : false,
-        "message" : "",
-        "id" : ""
-    }
-    let client = null
-    try{
-        const nameCheck = new inputCheck(name)
-        const mailCheck = new inputCheck(mail)
 
-        if(nameCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = nameCheck.errMessage
-        else if(mailCheck.isMinSize(4).isMaxSize(31).isMail().isEmpty().result != true) result.message = mailCheck.errMessage
-        else{
-            client = new Client(db.pgConnect)
-            client.connect()
-            const sql = "SELECT id FROM account WHERE name = $1 AND mail = $2;"
-            const values = [name,mail]
-            const data = await client.query(sql,values)
-    
-            const row = data.rows
-    
-            if(row.length != 0) {
-                result.id = row[0].id
-                result.success  = true
-                result.message = "귀하의 아이디를 찾았습니다."
-            } else{
-                result.message = "존재하지 않는 정보입니다."
-            }
-        }
-        res.send(result)
-    }catch(err){
-        console.log("GET /account/find-id",err.message)
-        next(err)
-    }finally {
-        if(client) client.end()
-
-        req.resData = result //for logging
-        next()
-    }
-        
-
-})
 // 비번찾기 - 신원확인
-router.get("/certification",async(req,res,next)=>{
+router.get("/find-pw/certification",async(req,res,next)=>{
     const {id,name,mail} = req.query; // 받아옴
     const result = {
         "success" : false,
@@ -247,6 +259,7 @@ router.get("/certification",async(req,res,next)=>{
     }
    
 })
+
 // 비번찾기 - 비번변경
 router.put("/modify-pw",auth.authCheck,async(req,res,next)=>{
     const {newpw1,newpw2} = req.body; // 받아옴
@@ -283,6 +296,7 @@ router.put("/modify-pw",auth.authCheck,async(req,res,next)=>{
     }
     
 })
+
 // 계정삭제
 router.delete("/",auth.authCheck,async(req,res,next)=>{
     const {pw} = req.body;

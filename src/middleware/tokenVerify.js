@@ -17,9 +17,7 @@ const verifyWithToken = async(req) =>{ // 토큰이 있는지 없는지만 확�
 const publishToken = async(userData) =>{ //갱신과, 생성을 동시에 하나의 코드로
     try{
         const token = jwt.sign({
-            "userNum": userData.usernum //payload
-            ,"userId": userData.id
-            ,"isAdmin": userData.isadmin
+            "id": userData.id //payload
         },
         process.env.randomNum,
         {

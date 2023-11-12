@@ -47,7 +47,7 @@ class inputCheck {
     }
 
     isMail = () =>{
-        if(regexPatterns.email.test(this.input) == false){
+        if(regexPatterns.mail.test(this.input) == false){
             this.goError("Mail type error")
         }  
         return this;
@@ -75,7 +75,7 @@ class inputCheck {
         return this;
     }
     
-    isSameWith =(input2) =>{
+    isEqual =(input2) =>{
         if(this.input != input2){
             this.goError("NOT same input")
         }  

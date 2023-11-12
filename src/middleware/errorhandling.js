@@ -8,7 +8,7 @@ const errorPass = (err,req,res) =>{
     try{
         if(!err.status){//미지정 status = 예측불가 오류
             err.status = 500
-            err.message = "Server Error!"
+            err.message = "Server Error!" // 에러 메시지를 보여주면 안 됨
         }
 
         result.message = err.message; //status를 지정해서 발생하는 오류는 반드시 메시지를 적어서 보내줘야 합니다! 

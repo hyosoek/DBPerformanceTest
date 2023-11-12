@@ -1,4 +1,4 @@
-const verify = require("./verify");
+const verify = require("./tokenVerify");
 
 const adminCheck = async(req,res,next) =>{ // 관리자 권한을 가지고 있다면
     try{

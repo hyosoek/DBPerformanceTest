@@ -3,7 +3,7 @@ class RegexPatterns {
         this.id = /^[A-Za-z0-9]{0,32}$/;
         this.password = /^[A-Za-z0-9!@#$%^&*()\\-_=+\\|[\]{};:'",.<>/?`~]{4,32}$/;
         this.name = /^[A-Za-z가-힣]{1,32}$/;
-        this.email = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        this.mail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         this.date = /^\d{4}-\d{1,2}-\d{1,2}$/;
         this.contact = /^\d{9,11}$/;
         this.time = /^\d{4}-\d{2}-\d{2} $/;
