@@ -1,3 +1,4 @@
+require('dotenv').config({ path: "../../.env" });
 const router = require("express").Router()
 const inputCheck = require("../module/inputCheck.js");
 
@@ -90,6 +91,10 @@ router.get("/sign-up/certification",async(req,res,next)=>{3
         inputCheck(code).isMinSize(0).isMaxSize(7).isEmpty()
         const certCheck = await mailCertification.certification(mail,code)
         if(certCheck){
+            await redis.connect();
+            await redis.expire(mail+process.env.mailCert, process.env.signUpExpireTime); // 코드 유효시간 5분으로 리셋 =>
+            redis.disconnect() 
+
             result.success = true;
             result.message = "Certification Success"
         }else{
@@ -135,7 +140,8 @@ router.get("/duplicate-nickname",async(req,res,next)=>{
 })
 
 router.post("/",async(req,res,next)=>{
-    const {mail,pw1,pw2,nickname} = req.body;
+    //duplicate는 unique라서 자동으로 되는 듯, 인증코드만 받으면 되는데,
+    const {mail,pw1,pw2,nickname,code} = req.body;
     const result = {
         "success" : false,
         "message" : ""
@@ -145,16 +151,30 @@ router.post("/",async(req,res,next)=>{
         inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
         inputCheck(pw1).isMinSize(4).isMaxSize(31).isEmpty().isEqual(pw2)
         inputCheck(nickname).isMinSize(4).isMaxSize(31).isEmpty()
+        inputCheck(code).isMinSize(5).isMaxSize(7).isEmpty()
 
-        client = new Client(db.pgConnect)
-        client.connect()
-        const sql = `INSERT INTO account (mail,pw,nickname) VALUES ($1,$2,$3);` // 트랜잭션 체크를 할까...?
-        const values = [mail,pw1,nickname]
-        const data = await client.query(sql,values)
-        const row = data.rows
+        await redis.connect();
+        const redisData = await redis.get(mail+process.env.mailCert) // 아까의 인증 번호 = 신원확인 + 비밀번호 바꿀 권한 둘다 쓰는거(시점만 다른 거라 생각)
+
+        console.log(redisData)
+
+        if(redisData == code){
+            client = new Client(db.pgConnect)
+            client.connect()
+            const sql = `INSERT INTO account (mail,pw,nickname) VALUES ($1,$2,$3);` //여기서 duplicate 체크
+            const values = [mail,pw1,nickname]
+            const data = await client.query(sql,values)
+            await redis.expire(mail+process.env.mailCert, "0")
+            
+            result.success = true;
+            res.send(result)
+        }else{
+            const error = new Error();
+            error.status = 403;
+            error.message = "Athentication Fail!";
+            throw error
+        }
         
-        result.success = true;
-        res.send(result)
     }catch(err){
         if(err.code == "23505") {
             err.status = 422
@@ -163,11 +183,12 @@ router.post("/",async(req,res,next)=>{
         console.log("POST /account", err.message)
         next(err)
     } finally{
+        redis.disconnect()
         if(client) client.end()
     } 
 })
 
-router.get("/log-out",auth.authCheck,async(req,res,next)=>{
+router.get("/log-out",async(req,res,next)=>{
     const result = {
         "success" : false,
         "message" : ""
@@ -216,85 +237,72 @@ router.get("/find-pw/send-mail",async(req,res,next)=>{
 
 // 비번찾기 - 신원확인
 router.get("/find-pw/certification",async(req,res,next)=>{
-    const {id,name,mail} = req.query; // 받아옴
-    const result = {
-        "success" : false,
-        "message" : "",
-        "token": null
-    }
-    let client = null
-    try{
-        const idCheck = new inputCheck(id)
-        const nameCheck = new inputCheck(name)
-        const mailCheck = new inputCheck(mail)
-
-        if (idCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = idCheck.errMessage
-        else if(nameCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = nameCheck.errMessage
-        else if(mailCheck.isMinSize(4).isMaxSize(31).isMail().isEmpty().result != true) result.message = mailCheck.errMessage
-        else{
-            client = new Client(db.pgConnect)
-            client.connect()
-            const sql = "SELECT usernum FROM account WHERE id = $1 AND name = $2 AND mail = $3;"
-            const values = [id,name,mail]
-            const data = await client.query(sql,values)
-    
-            const row = data.rows
-            if(row.length != 0) {
-                result.success  = true
-                result.message = "귀하의 아이디를 찾았습니다."
-                result.token = await verify.publishToken(row[0]) // 임시토큰 발행
-            } else{
-                result.message = "존재하지 않는 정보입니다."
-            }
-        }
-        res.send(result)
-    }catch(err){
-        console.log("GET /account/certification",err.message)
-        next(err)
-    } finally{
-        if(client) client.end()
-
-        req.resData = result //for logging
-        next()
-    }
-   
-})
-
-// 비번찾기 - 비번변경
-router.put("/modify-pw",auth.authCheck,async(req,res,next)=>{
-    const {newpw1,newpw2} = req.body; // 받아옴
+    const { mail,code } = req.query;
     const result = {
         "success" : false,
         "message" : ""
     }
-    let client = null
     try{
-        const pwCheck = new inputCheck(newpw1)
-        if(pwCheck.isMinSize(4).isMaxSize(31).isSameWith(newpw2).isEmpty().result != true) result.message = pwCheck.errMessage
-        else {
-            client = new Client(db.pgConnect)
-            client.connect()
-            const sql = "UPDATE account SET pw = $1 WHERE usernum = $2;"
-            const values = [newpw1,await req.decoded.userNum]
-            const data = await client.query(sql,values)
-            res.clearCookie("token")
-            //token 블랙리스트(blacklist)처리
-            await redis.zAdd(process.env.blackList, {"score" : Math.floor(currentTime) ,"value" : req.headers.authorization}); //블랙리스트 삽입
+        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
+        inputCheck(code).isMinSize(0).isMaxSize(7).isEmpty()
+        const certCheck = await mailCertification.certification(mail,code)
+        if(certCheck){ // 메일 인증에 성공하면
+            //새로 
+            await redis.connect();
+            await redis.expire(mail+process.env.mailCert, process.env.changePwExpireTime); // 5분동안 비번 변경 가능
+            redis.disconnect() 
 
-            result.success  = true
-            result.message = "비밀번호 변경 완료"
+            result.success = true;
+            result.message = "Certification Success, You can change Pw!"
+        }else{
+            result.message = "Not match code!"
         }
         res.send(result)
     }catch(err){
-        console.log("PUT /account/modify-pw",err.message)
+        console.log("GET /account/find-pw/certification", err.message)
         next(err)
-    }finally{
-        if(client) client.end()
-
-        req.resData = result //for logging
-        next()
     }
-    
+})
+
+// 비번찾기 - 비번변경
+router.put("/pw",async(req,res,next)=>{
+    const {mail,pw1,pw2,code} = req.body;
+    const result = {
+        "success" : false,
+        "message" : ""
+    }
+    let client = null;
+    try{
+        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
+        inputCheck(pw1).isMinSize(4).isMaxSize(31).isEmpty().isEqual(pw2)
+        inputCheck(code).isMinSize(5).isMaxSize(7).isEmpty()
+
+        await redis.connect();
+        const redisData = await redis.get(mail+process.env.mailCert)
+
+        if(redisData == code){
+            client = new Client(db.pgConnect)
+            client.connect()
+            const sql = `UPDATE account SET pw=$1 WHERE mail=$2;` // 트랜잭션 체크를 할까...?
+            const values = [pw1,mail]
+            const data = await client.query(sql,values)
+            await redis.expire(mail+process.env.mailCert, "0")
+
+            result.success = true;
+            res.send(result)
+        }else{
+            const error = new Error();
+            error.status = 403;
+            error.message="Athentication Fail!";
+            throw error;
+        }
+    }catch(err){
+        console.log("PUT /account/pw", err.message)
+        next(err)
+    } finally{
+        redis.disconnect()
+        if(client) client.end()
+    }
 })
 
 // 계정삭제

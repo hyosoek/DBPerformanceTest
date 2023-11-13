@@ -7,6 +7,11 @@ const fs = require("fs")
 const redis = require("redis").createClient();
 const errorHandler = require("./middleware/errorhandling.js")
 
+const morgan = require("morgan");
+const logger = require("./module/logger");
+const morganFormat = process.env.NODE_ENV !== "production" ? "dev" : combined; // NOTE: morgan 출력 형태 server.env에서 NODE_ENV 설정 production : 배포 dev : 개발
+//const morganFormat = 'combined'; 
+
 const app = express()
 const sslOptions = {
     "key":fs.readFileSync(path.join(__dirname,"../ssl/key.pem")),
@@ -14,6 +19,8 @@ const sslOptions = {
     "passphrase" : "1234" 
 }
 const server = https.createServer(sslOptions,app)
+
+app.use(morgan(morganFormat, { stream: logger.stream })); // morgan 로그 설정 
 app.use(express.json())
 app.use(express.static('../'));
 
