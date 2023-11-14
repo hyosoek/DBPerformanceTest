@@ -26,7 +26,9 @@ router.post("/log-in",async(req,res,next)=>{
 
         client = new Client(db.pgConnect)
         client.connect()
-        const sql = `SELECT id FROM account WHERE mail=$1 AND pw = $2;`
+        const sql = `SELECT id 
+                    FROM account 
+                    WHERE mail=$1 AND pw = $2;`
         const values = [mail,pw]
         const data = await client.query(sql,values)
         const row = data.rows
@@ -35,7 +37,7 @@ router.post("/log-in",async(req,res,next)=>{
             result.success  = true
             result.token = await verify.publishToken(row[0])
         } else{
-            result.message = "No-exist email"
+            result.message = "Log-in Fail"
         }
         res.send(result)
     }catch(err){
@@ -59,7 +61,9 @@ router.get("/sign-up/send-mail",async(req,res,next)=>{3
         inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
         client = new Client(db.pgConnect)
         client.connect()
-        const sql = `SELECT count(*) FROM account WHERE mail=$1;`
+        const sql = `SELECT count(*) 
+                    FROM account 
+                    WHERE mail=$1;`
         const values = [mail]
         const data = await client.query(sql,values)
         const row = data.rows
@@ -119,7 +123,9 @@ router.get("/duplicate-nickname",async(req,res,next)=>{
 
         client = new Client(db.pgConnect)
         client.connect()
-        const sql = `SELECT count(*) FROM account WHERE nickname=$1`
+        const sql = `SELECT count(*) 
+                    FROM account 
+                    WHERE nickname=$1`
         const values = [nickname]
         const data = await client.query(sql,values)
         const row = data.rows
@@ -161,7 +167,8 @@ router.post("/",async(req,res,next)=>{
         if(redisData == code){
             client = new Client(db.pgConnect)
             client.connect()
-            const sql = `INSERT INTO account (mail,pw,nickname) VALUES ($1,$2,$3);` //여기서 duplicate 체크
+            const sql = `INSERT INTO account (mail,pw,nickname) 
+                        VALUES ($1,$2,$3);` //여기서 duplicate 체크
             const values = [mail,pw1,nickname]
             const data = await client.query(sql,values)
             await redis.expire(mail+process.env.mailCert, "0")
@@ -214,7 +221,9 @@ router.get("/find-pw/send-mail",async(req,res,next)=>{
         inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
         client = new Client(db.pgConnect)
         client.connect()
-        const sql = `SELECT count(*) FROM account WHERE mail=$1;`
+        const sql = `SELECT count(*) 
+                    FROM account 
+                    WHERE mail=$1;`
         const values = [mail]
         const data = await client.query(sql,values)
         const row = data.rows
@@ -283,7 +292,9 @@ router.put("/pw",async(req,res,next)=>{
         if(redisData == code){
             client = new Client(db.pgConnect)
             client.connect()
-            const sql = `UPDATE account SET pw=$1 WHERE mail=$2;` // 트랜잭션 체크를 할까...?
+            const sql = `UPDATE account 
+                        SET pw=$1 
+                        WHERE mail=$2;` // 트랜잭션 체크를 할까...?
             const values = [pw1,mail]
             const data = await client.query(sql,values)
             await redis.expire(mail+process.env.mailCert, "0")
@@ -314,35 +325,26 @@ router.delete("/",auth.authCheck,async(req,res,next)=>{
     }
     let client = null
     try{
-        const pwCheck = new inputCheck(pw)
-        if(pwCheck.isMinSize(4).isMaxSize(31).isEmpty().result != true) result.message = pwCheck.errMessage
-        else {
-            client = new Client(db.pgConnect)
-            client.connect()
-            const sql = "DELETE FROM account WHERE usernum = $1 AND pw = $2;"
-            const values = [req.decoded.userNum,pw]
-            const data = await client.query(sql,values)
-            
-            res.clearCookie("token")
-            await redis.connect()
-            const currentTime = new Date()
-            await redis.zAdd(process.env.blackList, {"score" : Math.floor(currentTime) ,"value" : req.headers.authorization}); // 첫반째로 초기화
-
-            result.success  = true
-            result.message = "계정 삭제 완료"
+        const userId = req.decoded.id;
+        inputCheck(pw).isMinSize(4).isMaxSize(31).isEmpty()
+        client = new Client(db.pgConnect)
+        client.connect()
+        const sql = `DELETE FROM account 
+                    WHERE id=$1 AND pw = $2`
+        const values = [userId,pw]
+        const data = await client.query(sql,values)
+        if(data.rowCount != 0){
+            result.success = true;
+            result.message = "Delete Finish!"
+        }else{
+            result.message = "Delete Fail, Check Pw or Other..."
         }
         res.send(result)
     }catch(err){
-        if(err.constraint === 'new_comment_usernum_fkey' || 'new_post_usernum_fkey'){
-            err.status = 409
-            err.message = err.constraint + " Error!"
-        }
-        console.log("DELETE /account",err.message)
+        console.log("DELETE /account", err.message)
         next(err)
     } finally{
         if(client) client.end()
-        req.resData = result //for logging
-        next()
     }
 })
 
