@@ -35,11 +35,8 @@ app.get("*",(req,res,next) =>{
 })
 
 //API
-const accountApi = require("./router/account")
-app.use("/account", accountApi)
-
-// const profileApi = require("./router/main")
-// app.use("/main", profileApi)
+app.use("/account", require("./router/account"))
+app.use("/main", require("./router/main"))
 
 // const postApi = require("./router/appliance")
 // app.use("/appliance",postApi) 

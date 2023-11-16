@@ -6,6 +6,48 @@ const redis =require("redis").createClient()
 const auth = require("../middleware/authorization.js")
 
 
+router.put("/",auth.adminCheck,async(req,res,next)=>{
+    const {mail,pw1,pw2,code} = req.body;
+    const result = {
+        "success" : false,
+        "message" : ""
+    }
+    let client = null;
+    try{
+        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
+        inputCheck(pw1).isMinSize(4).isMaxSize(31).isEmpty().isEqual(pw2)
+        inputCheck(code).isMinSize(5).isMaxSize(7).isEmpty()
+
+        await redis.connect();
+        const redisData = await redis.get(mail+process.env.mailCert)
+
+        if(redisData == code){
+            client = new Client(db.pgConnect)
+            client.connect()
+            const sql = `UPDATE account 
+                        SET pw=$1 
+                        WHERE mail=$2;` // 트랜잭션 체크를 할까...?
+            const values = [pw1,mail]
+            const data = await client.query(sql,values)
+            await redis.expire(mail+process.env.mailCert, "0")
+
+            result.success = true;
+            res.send(result)
+        }else{
+            const error = new Error();
+            error.status = 403;
+            error.message="Athentication Fail!";
+            throw error;
+        }
+    }catch(err){
+        console.log("PUT /account/pw", err.message)
+        next(err)
+    } finally{
+        redis.disconnect()
+        if(client) client.end()
+    }
+})
+
 router.get("/",auth.adminCheck,async(req,res,next) =>{
     const {newest,id,pagenum} = req.query;
     const result = {

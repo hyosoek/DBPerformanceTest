@@ -147,7 +147,7 @@ router.get("/duplicate-nickname",async(req,res,next)=>{
 
 router.post("/",async(req,res,next)=>{
     //duplicate는 unique라서 자동으로 되는 듯, 인증코드만 받으면 되는데,
-    const {mail,pw1,pw2,nickname,code} = req.body;
+    const {mail,pw1,pw2,nickname,code,longitude,latitude} = req.body;
     const result = {
         "success" : false,
         "message" : ""
@@ -157,6 +157,8 @@ router.post("/",async(req,res,next)=>{
         inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
         inputCheck(pw1).isMinSize(4).isMaxSize(31).isEmpty().isEqual(pw2)
         inputCheck(nickname).isMinSize(4).isMaxSize(31).isEmpty()
+        inputCheck(longitude).isEmpty()
+        inputCheck(latitude).isEmpty()
         inputCheck(code).isMinSize(5).isMaxSize(7).isEmpty()
 
         await redis.connect();
@@ -167,9 +169,9 @@ router.post("/",async(req,res,next)=>{
         if(redisData == code){
             client = new Client(db.pgConnect)
             client.connect()
-            const sql = `INSERT INTO account (mail,pw,nickname) 
-                        VALUES ($1,$2,$3);` //여기서 duplicate 체크
-            const values = [mail,pw1,nickname]
+            const sql = `INSERT INTO account (mail,pw,nickname,longitude,latitude) 
+                        VALUES ($1,$2,$3,$4,$5);` //여기서 duplicate 체크
+            const values = [mail,pw1,nickname,longitude,latitude]
             const data = await client.query(sql,values)
             await redis.expire(mail+process.env.mailCert, "0")
             
