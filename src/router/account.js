@@ -157,8 +157,8 @@ router.post("/",async(req,res,next)=>{
         inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
         inputCheck(pw1).isMinSize(4).isMaxSize(31).isEmpty().isEqual(pw2)
         inputCheck(nickname).isMinSize(4).isMaxSize(31).isEmpty()
-        inputCheck(longitude).isEmpty()
-        inputCheck(latitude).isEmpty()
+        inputCheck(longitude).isMaxSize(20).isEmpty()
+        inputCheck(latitude).isMaxSize(20).isEmpty()
         inputCheck(code).isMinSize(5).isMaxSize(7).isEmpty()
 
         await redis.connect();
@@ -174,10 +174,11 @@ router.post("/",async(req,res,next)=>{
             const values = [mail,pw1,nickname,longitude,latitude]
             const data = await client.query(sql,values)
             await redis.expire(mail+process.env.mailCert, "0")
-            
+            await redis.disconnect()
             result.success = true;
             res.send(result)
         }else{
+            await redis.disconnect()
             const error = new Error();
             error.status = 403;
             error.message = "Athentication Fail!";
@@ -192,7 +193,6 @@ router.post("/",async(req,res,next)=>{
         console.log("POST /account", err.message)
         next(err)
     } finally{
-        redis.disconnect()
         if(client) client.end()
     } 
 })

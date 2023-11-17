@@ -21,7 +21,7 @@ const sslOptions = {
 const server = https.createServer(sslOptions,app)
 
 app.use(morgan(morganFormat, { stream: logger.stream })); // morgan 로그 설정 
-app.use(express.json())
+app.use(express.json()) // 타입 변환(req에 대한 body-parser)
 app.use(express.static('../'));
 
 app.get("*",(req,res,next) =>{
@@ -37,14 +37,10 @@ app.get("*",(req,res,next) =>{
 //API
 app.use("/account", require("./router/account"))
 app.use("/main", require("./router/main"))
-
 // const postApi = require("./router/appliance")
 // app.use("/appliance",postApi) 
-
 // const commentApi = require("./router/recommend")
 // app.use("/recommend",commentApi) 
-
-// app.use(log.logging) // 로깅 없앨 것
 
 app.use(function (err, req, res, next) {
     errorHandler.errorPass(err,req,res)
