@@ -38,6 +38,7 @@ router.put("/address",auth.authCheck,async(req,res,next)=>{
 router.get("/totalInformation",auth.authCheck,async(req,res,next) =>{
     const result = {
         "success" : false,
+        "data": null,
         "message" : ""
     }
     let client = null;
@@ -49,7 +50,7 @@ router.get("/totalInformation",auth.authCheck,async(req,res,next) =>{
                     FROM (
                         SELECT 
                             'refrigerator' AS device, 
-                            json_agg(refrigerator.*) AS data
+                            json_agg(json_build_object('id', id, 'energy', energy)) AS data
                         FROM 
                             refrigerator
                         WHERE 
@@ -59,7 +60,7 @@ router.get("/totalInformation",auth.authCheck,async(req,res,next) =>{
                     
                         SELECT 
                             'air_conditioner' AS device, 
-                            json_agg(air_conditioner.*) AS data
+                            json_agg(json_build_object('id', id, 'energy', energy)) AS data
                         FROM 
                             air_conditioner
                         WHERE 
@@ -69,7 +70,7 @@ router.get("/totalInformation",auth.authCheck,async(req,res,next) =>{
                 
                         SELECT 
                             'television' AS device, 
-                            json_agg(television.*) AS data
+                            json_agg(json_build_object('id', id, 'energy', energy)) AS data
                         FROM 
                             television
                         WHERE 
@@ -79,7 +80,7 @@ router.get("/totalInformation",auth.authCheck,async(req,res,next) =>{
                 
                         SELECT 
                             'washing_machine' AS device, 
-                            json_agg(washing_machine.*) AS data
+                            json_agg(json_build_object('id', id, 'energy', energy)) AS data
                         FROM 
                             washing_machine
                         WHERE 
@@ -89,7 +90,7 @@ router.get("/totalInformation",auth.authCheck,async(req,res,next) =>{
                 
                         SELECT 
                             'microwave' AS device, 
-                            json_agg(microwave.*) AS data
+                            json_agg(json_build_object('id', id, 'energy', energy)) AS data
                         FROM 
                             microwave
                         WHERE 
@@ -99,7 +100,7 @@ router.get("/totalInformation",auth.authCheck,async(req,res,next) =>{
                 
                         SELECT 
                             'boiler' AS device, 
-                            json_agg(boiler.*) AS data
+                            json_agg(json_build_object('id', id, 'efficiency', efficiency)) AS data
                         FROM 
                             boiler
                         WHERE 
@@ -109,7 +110,7 @@ router.get("/totalInformation",auth.authCheck,async(req,res,next) =>{
                 
                         SELECT 
                             'dryer' AS device, 
-                            json_agg(dryer.*) AS data
+                            json_agg(json_build_object('id', id, 'energy', energy)) AS data
                         FROM 
                             dryer
                         WHERE 
@@ -120,13 +121,11 @@ router.get("/totalInformation",auth.authCheck,async(req,res,next) =>{
         const data = await client.query(sql,values)
         const row = data.rows
 
-        console.log(row[0].result)
-
         result.success = true
-        result.message = "Send Certification Number"
+        result.data = row[0].result
         res.send(result)
     }catch(err){
-        console.log("GET /account/sign-up/send-mail", err.message)
+        console.log("GET /main/totalInformation", err.message)
         next(err)
     } finally{
         if(client) client.end()

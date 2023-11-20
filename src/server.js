@@ -37,6 +37,7 @@ app.get("*",(req,res,next) =>{
 //API
 app.use("/account", require("./router/account"))
 app.use("/main", require("./router/main"))
+app.use("/appliance", require("./router/appliance"))
 // const postApi = require("./router/appliance")
 // app.use("/appliance",postApi) 
 // const commentApi = require("./router/recommend")

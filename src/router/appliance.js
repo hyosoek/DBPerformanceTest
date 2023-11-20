@@ -1,101 +1,139 @@
 const router = require("express").Router()
-const client = require("mongodb").MongoClient
+const {Client} = require("pg")
+const db = require('../../config/database.js');
 
 const inputCheck = require("../module/inputCheck.js");
-const searchHistory = require("../module/searchHistory.js")
 const redis =require("redis").createClient()
 const auth = require("../middleware/authorization.js")
 
 
-router.get("/",auth.adminCheck,async(req,res,next) =>{
-    const {newest,id,pagenum} = req.query;
+router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
+    const {id} = req.query;
     const result = {
-        "success" :false,
-        "message" :null,
-        "data" :null,
-        "maxpage": null
+        "success" : false,
+        "data" : null,
+        "message" : ""
     }
-    
-    let conn = null //중요!
+    let client = null;
     try{
-        const newestCheck = new inputCheck(newest)
-        const idCheck = new inputCheck(id)
-        const pagenumCheck = new inputCheck(pagenum)
+        inputCheck(id).isEmpty().isFinite()
+        const id = `SELECT *
+                        FROM (
+                            SELECT 
+                                a.id AS user_id, a.latitude, a.longtitude, b.id AS air_conditioner_id,b.energy, b.co2,
+                                ROW_NUMBER()
+                                OVER (ORDER BY 
+                                    ABS(a.latitude - (SELECT 
+                                                            latitude 
+                                                    FROM 
+                                                        account 
+                                                    WHERE 
+                                                        id = $1))^2 +        
+                                    ABS(a.longtitude - (SELECT
+                                                            longtitude 
+                                                     FROM 
+                                                        account 
+                                                    WHERE 
+                                                        id = $1))^2) 
+                                AS row_number           
+                            FROM 
+                                account a                                                              
+                            JOIN                                                                   
+                                air_conditioner b 
+                            ON 
+                                a.id = b.account_id
+                        ) AS subquery
+                    WHERE 
+                        row_number BETWEEN 0 AND 101
+                    ORDER BY 
+                        row_number;`
 
-        if (idCheck.isNull().isUndefined().result != true) result.message = idCheck.errMessage // isIP 넣어야할 듯
-        else if (pagenumCheck.isEmpty().result != true) result.message = pagenumCheck.errMessage
-        else{
-            conn  = await client.connect(process.env.mongoDb)//계정이 없어서 오로지 하나의 변수
-            let isNewest = null;
-            isNewest = parseInt(newest) * (-1)
-            const matchCondition = id ? { id: id } : {};
+        const values = [req.decoded.id,energy,co2,modelname]
+        const data = await client.query(sql,values)
+        const rows = data.row
+        
+        result.data = rows;
+        result.success = true;
+        res.send(result)
+    }catch(err){
+        console.log("GET /appliance/refrigerator", err.message) // 이건 해주는게 맞음
+        next(err)
+    } finally{
+        if(client) client.end()
+    }  
+})
 
-            const pipeline = [
-                { $match: matchCondition },
-                { $facet: {
-                    data: [
-                      { $sort: { time: isNewest} },
-                      { $skip: (pagenum-1)*process.env.logPerPage },
-                      { $limit: parseInt(process.env.logPerPage) },
-                    ],
-                    totalCount: [
-                      { $count: 'totalCount' },
-                    ],
-                  }
-                },
-                { $unwind: '$totalCount' },
-                { $project: { _id: 0, totalCount: '$totalCount.totalCount', data: 1 } },
-            ];
+router.post("/refrigerator",auth.authCheck,async(req,res,next) =>{
+    const {energy,co2,modelname} = req.body;
+    const result = {
+        "success" : false,
+        "message" : ""
+    }
+    let client = null;
+    try{
+        inputCheck(energy).isEmpty().isFinite()
+        inputCheck(co2).isEmpty().isFinite()
+        inputCheck(modelname).isMinSize(4).isMaxSize(50).isEmpty()
 
-            const dbResult = await conn.db('healthpartner').collection("log")
-                .aggregate(pipeline)
-                .toArray(); //
+        client = new Client(db.pgConnect)
+        client.connect()
+        const sql = `INSERT INTO 
+                        refrigerator (account_id,energy,co2,model_name) 
+                    VALUES 
+                        ($1,$2,$3,$4);` //여기서 duplicate 체크
+        const values = [req.decoded.id,energy,co2,modelname]
+        const data = await client.query(sql,values)
 
-            const data = dbResult.length > 0 ? dbResult[0].data : [];
-            const count = dbResult.length > 0 ? dbResult[0].totalCount : 0;
+        if(data.rowCount){ // 삭제된게 있는 경우
+            result.success = true;
+        }else{
+            result.message = "Update Fail!"
+        }
 
-            result.maxpage = Math.ceil(count / process.env.logPerPage);
-            result.data = data
-            result.success = true
+        result.success = true;
+        res.send(result)
+    }catch(err){
+        console.log("POST /appliance/refrigerator", err.message) // 이건 해주는게 맞음
+        next(err)
+    } finally{
+        if(client) client.end()
+    }  
+})
 
-            if(id){
-                await searchHistory.addSearchHistory(id)
-            }
-            req.resData = result
+router.delete("/refrigerator",auth.authCheck,async(req,res,next) =>{
+    const {id} = req.body;
+    const result = {
+        "success" : false,
+        "message" : ""
+    }
+    let client = null;
+    try{
+        inputCheck(id).isEmpty().isInt()
+
+        client = new Client(db.pgConnect)
+        client.connect()
+        const sql = `DELETE FROM 
+                        refrigerator 
+                    WHERE 
+                        id=$1 AND account_id=$2` //여기서 duplicate 체크
+        const values = [id,req.decoded.id]
+        const data = await client.query(sql,values)
+
+        if(data.rowCount){ // 삭제된게 있는 경우
+            result.success = true;
+        }else{
+            result.message = "Not exist data!"
         }
         res.send(result)
     }catch(err){
-        console.log(`GET /log Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
+        console.log("DELETE /appliance/refrigerator", err.message) // 이건 해주는게 맞음
         next(err)
-    }finally{
-        if(conn) conn.close()
-    }
+    } finally{
+        if(client) client.end()
+    }  
 })
 
-router.get("/search-history",auth.adminCheck,async(req,res,next) =>{
-    const result = {
-        "success" :false,
-        "message" :null,
-        "data" :null
-    }
-    
-    let conn = null //중요!
-    try{
-        await redis.connect()
-        const redislist = await redis.zRange(process.env.searchHistory, 0, -1)
-       
-        result.success = true
-        result.message = "최근검색목록"
-        result.data = redislist
 
-        res.send(result)
-    }catch(err){
-        console.log(`GET /log/search-history Error : ${err.message}`) //이거 일일히 하기 힘든데, req 헤더 이용
-        next(err)
-    }finally{
-        redis.disconnect()
-    }
-})
 
 
 
