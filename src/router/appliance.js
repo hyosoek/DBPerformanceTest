@@ -4,7 +4,8 @@ const db = require('../../config/database.js');
 
 const inputCheck = require("../module/inputCheck.js");
 const redis =require("redis").createClient()
-const auth = require("../middleware/authorization.js")
+const auth = require("../middleware/authorization.js");
+const adaptiveCacheTable = require("../module/adaptiveCacheTable.js");
 
 
 router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
@@ -16,11 +17,28 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
     }
     let client = null;
     try{
-        inputCheck(id).isEmpty().isFinite()
-        const id = `SELECT *
+        inputCheck(id).isEmpty()
+        client = new Client(db.pgConnect)
+        client.connect()
+        //await client.query('BEGIN');
+        const sql1 = `SELECT longitude,latitude FROM account WHERE id = $1`
+        const values1 = [req.decoded.id]
+        const data1 = await client.query(sql1,values1)
+        const row1 = data1.rows
+        if(row1.length != 1){
+            err = new Error()
+            err.status = 403
+            err.message = "Invalid user Data!"
+            throw err
+        }
+        await adaptiveCacheTable.setTable(row1[0].longitude,row1[0].latitude)
+        await adaptiveCacheTable.getInitArea(row1[0].longitude,row1[0].latitude) // 캐싱테이블을 통해 얼마나 상세한 부분에서 시작할지 정함
+        
+        //Init 범위 내에서 어쩌고
+        const sql2 = `SELECT *
                         FROM (
                             SELECT 
-                                a.id AS user_id, a.latitude, a.longtitude, b.id AS air_conditioner_id,b.energy, b.co2,
+                                a.id AS user_id, a.latitude, a.longitude, b.id AS refrigerator_id,b.energy, b.co2,
                                 ROW_NUMBER()
                                 OVER (ORDER BY 
                                     ABS(a.latitude - (SELECT 
@@ -29,8 +47,8 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
                                                         account 
                                                     WHERE 
                                                         id = $1))^2 +        
-                                    ABS(a.longtitude - (SELECT
-                                                            longtitude 
+                                    ABS(a.longitude - (SELECT
+                                                            longitude 
                                                      FROM 
                                                         account 
                                                     WHERE 
@@ -39,23 +57,37 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
                             FROM 
                                 account a                                                              
                             JOIN                                                                   
-                                air_conditioner b 
+                                refrigerator b 
                             ON 
-                                a.id = b.account_id
+                                a.id = b.account_id   
+                            WHERE
+                                a.longitude < 72 
+                                AND
+                                       a.longitude > 0
+                                AND
+                                latitude < 26
+                                AND
+                                       latitude > 0       
                         ) AS subquery
                     WHERE 
                         row_number BETWEEN 0 AND 101
                     ORDER BY 
                         row_number;`
 
-        const values = [req.decoded.id,energy,co2,modelname]
-        const data = await client.query(sql,values)
-        const rows = data.row
-        
-        result.data = rows;
+        const values2 = [req.decoded.id]
+        const data2 = await client.query(sql2,values2)
+        const row = data2.rows
+
+        if (row.length <= 100){
+            
+        }else{
+
+        }
+
         result.success = true;
         res.send(result)
     }catch(err){
+        //await client.query('ROLLBACK')
         console.log("GET /appliance/refrigerator", err.message) // 이건 해주는게 맞음
         next(err)
     } finally{

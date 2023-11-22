@@ -14,6 +14,4 @@ const authCheck  = async(req,res,next) =>{ // 권한과 상관 없이
     }
 }
 
-
-
 module.exports = {authCheck}

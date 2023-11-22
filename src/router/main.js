@@ -117,7 +117,7 @@ router.get("/totalInformation",auth.authCheck,async(req,res,next) =>{
                             account_id = $1
 
                     ) AS devices_data;`
-        const values = [1110032]
+        const values = [req.decoded.id]
         const data = await client.query(sql,values)
         const row = data.rows
 
