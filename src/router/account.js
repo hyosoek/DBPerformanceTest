@@ -21,8 +21,8 @@ router.post("/log-in",async(req,res,next)=>{
     }
     let client = null;
     try{
-        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
-        inputCheck(pw).isMinSize(4).isMaxSize(31).isEmpty()
+        inputCheck(mail).isEmpty().isMinSize(4).isMaxSize(99).isMail()
+        inputCheck(pw).isEmpty().isMinSize(4).isMaxSize(31)
 
         client = new Client(db.pgConnect)
         client.connect()
@@ -58,7 +58,7 @@ router.get("/sign-up/send-mail",async(req,res,next)=>{3
     }
     let client = null;
     try{
-        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
+        inputCheck(mail).isEmpty().isMinSize(4).isMaxSize(99).isMail()
         client = new Client(db.pgConnect)
         client.connect()
         const sql = `SELECT count(*) 
@@ -91,8 +91,8 @@ router.get("/sign-up/certification",async(req,res,next)=>{3
         "message" : ""
     }
     try{
-        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
-        inputCheck(code).isMinSize(0).isMaxSize(7).isEmpty()
+        inputCheck(mail).isEmpty().isMinSize(4).isMaxSize(99).isMail()
+        inputCheck(code).isEmpty().isMinSize(0).isMaxSize(7)
         const certCheck = await mailCertification.certification(mail,code)
         if(certCheck){
             await redis.connect();
@@ -119,7 +119,7 @@ router.get("/duplicate-nickname",async(req,res,next)=>{
     }
     let client = null;
     try{
-        inputCheck(nickname).isMinSize(4).isMaxSize(31).isEmpty()
+        inputCheck(nickname).isEmpty().isMinSize(4).isMaxSize(31)
 
         client = new Client(db.pgConnect)
         client.connect()
@@ -154,17 +154,15 @@ router.post("/",async(req,res,next)=>{
     }
     let client = null;
     try{
-        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
-        inputCheck(pw1).isMinSize(4).isMaxSize(31).isEmpty().isEqual(pw2)
-        inputCheck(nickname).isMinSize(4).isMaxSize(31).isEmpty()
-        inputCheck(longitude).isMaxSize(20).isEmpty()
-        inputCheck(latitude).isMaxSize(20).isEmpty()
-        inputCheck(code).isMinSize(5).isMaxSize(7).isEmpty()
+        inputCheck(mail).isEmpty().isMinSize(4).isMaxSize(99).isMail()
+        inputCheck(pw1).isEmpty().isMinSize(4).isMaxSize(31).isEqual(pw2)
+        inputCheck(nickname).isEmpty().isMinSize(4).isMaxSize(31)
+        inputCheck(longitude).isEmpty().isMaxSize(20)
+        inputCheck(latitude).isEmpty().isMaxSize(20)
+        inputCheck(code).isEmpty().isMinSize(5).isMaxSize(7)
 
         await redis.connect();
         const redisData = await redis.get(mail+process.env.mailCert) // 아까의 인증 번호 = 신원확인 + 비밀번호 바꿀 권한 둘다 쓰는거(시점만 다른 거라 생각)
-
-        console.log(redisData)
 
         if(redisData == code){
             client = new Client(db.pgConnect)
@@ -220,7 +218,7 @@ router.get("/find-pw/send-mail",async(req,res,next)=>{
     }
     let client = null;
     try{
-        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
+        inputCheck(mail).isEmpty().isMinSize(4).isMaxSize(99).isMail()
         client = new Client(db.pgConnect)
         client.connect()
         const sql = `SELECT count(*) 
@@ -254,8 +252,8 @@ router.get("/find-pw/certification",async(req,res,next)=>{
         "message" : ""
     }
     try{
-        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
-        inputCheck(code).isMinSize(0).isMaxSize(7).isEmpty()
+        inputCheck(mail).isEmpty().isMinSize(4).isMaxSize(99).isMail()
+        inputCheck(code).isEmpty().isMinSize(0).isMaxSize(7)
         const certCheck = await mailCertification.certification(mail,code)
         if(certCheck){ // 메일 인증에 성공하면
             //새로 
@@ -284,9 +282,9 @@ router.put("/pw",async(req,res,next)=>{
     }
     let client = null;
     try{
-        inputCheck(mail).isMinSize(4).isMaxSize(99).isMail().isEmpty()
-        inputCheck(pw1).isMinSize(4).isMaxSize(31).isEmpty().isEqual(pw2)
-        inputCheck(code).isMinSize(5).isMaxSize(7).isEmpty()
+        inputCheck(mail).isEmpty().isMinSize(4).isMaxSize(99).isMail()
+        inputCheck(pw1).isEmpty().isMinSize(4).isMaxSize(31).isEqual(pw2)
+        inputCheck(code).isEmpty().isMinSize(5).isMaxSize(7)
 
         await redis.connect();
         const redisData = await redis.get(mail+process.env.mailCert)
@@ -328,7 +326,7 @@ router.delete("/",auth.authCheck,async(req,res,next)=>{
     let client = null
     try{
         const userId = req.decoded.id;
-        inputCheck(pw).isMinSize(4).isMaxSize(31).isEmpty()
+        inputCheck(pw).isEmpty().isMinSize(4).isMaxSize(31)
         client = new Client(db.pgConnect)
         client.connect()
         const sql = `DELETE FROM account 

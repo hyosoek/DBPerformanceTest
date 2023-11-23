@@ -32,10 +32,32 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
             throw err
         }
         await adaptiveCacheTable.setTable(row1[0].longitude,row1[0].latitude)
-        await adaptiveCacheTable.getInitArea(row1[0].longitude,row1[0].latitude) // 캐싱테이블을 통해 얼마나 상세한 부분에서 시작할지 정함
+        const initAreaLevel = await adaptiveCacheTable.getInitArea(row1[0].longitude,row1[0].latitude) // 캐싱테이블을 통해 얼마나 상세한 부분에서 시작할지 정함
         
-        //Init 범위 내에서 어쩌고
-        const sql2 = `SELECT *
+        //인천 = 레벨 2일 것
+        //126.6496 
+        //37.4473
+
+        //강원도 = 레벨 0일 것
+        //128.3602
+        //38.1342
+
+        let nearUserData = null
+
+        for(let i = 2;i >= 0; i--){//높은 숫자의 레벨을 가질 수록, 상대적으로 인구밀도가 높음을 의미합니다.
+            const longRange = parseFloat(process.env.koreanMaxLongitude)-parseFloat(process.env.koreanMinLongitude)
+            const latRange = parseFloat(process.env.koreanMaxLatitude)-parseFloat(process.env.koreanMinLatitude)
+            const divideFactor = Math.pow(2,i + parseInt(process.env.initZoomLevel))
+            //const divideFactor = Math.pow(2,i + parseInt(process.env.initZoomLevel))
+            
+            //const zoomLevelToRange = adaptiveCacheTable.zoomLevelToRange(i)
+            const longMaxRange =  126.6496  + (longRange/divideFactor)/2
+            const longMinRange =  126.6496 - (longRange/divideFactor)/2
+
+            const latMaxRange = 37.4473 + (latRange/divideFactor)/2
+            const latMinRange =  37.4473 - (latRange/divideFactor)/2
+
+            const sql2 = `SELECT *
                         FROM (
                             SELECT 
                                 a.id AS user_id, a.latitude, a.longitude, b.id AS refrigerator_id,b.energy, b.co2,
@@ -49,7 +71,7 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
                                                         id = $1))^2 +        
                                     ABS(a.longitude - (SELECT
                                                             longitude 
-                                                     FROM 
+                                                    FROM 
                                                         account 
                                                     WHERE 
                                                         id = $1))^2) 
@@ -61,28 +83,33 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
                             ON 
                                 a.id = b.account_id   
                             WHERE
-                                a.longitude < 72 
+                                    a.longitude < $2 
                                 AND
-                                       a.longitude > 0
+                                    a.longitude > $3
                                 AND
-                                latitude < 26
+                                    a.latitude < $4
                                 AND
-                                       latitude > 0       
+                                    a.latitude > $5     
                         ) AS subquery
                     WHERE 
                         row_number BETWEEN 0 AND 101
                     ORDER BY 
                         row_number;`
+            console.log(i+"'s iter LongRange : ",longMinRange,"~",longMaxRange)
+            console.log(i+"'s iter LatRange : ",latMinRange,"~",latMaxRange)
 
-        const values2 = [req.decoded.id]
-        const data2 = await client.query(sql2,values2)
-        const row = data2.rows
-
-        if (row.length <= 100){
-            
-        }else{
-
+            const values2 = [req.decoded.id,longMaxRange,longMinRange,latMaxRange,latMinRange]
+            const data2 = await client.query(sql2,values2)
+            const row2 = data2.rows
+            console.log(row2.length)
+            nearUserData = row2.map((elem) => { return elem })
+            if (row2.length >= 100){
+                break;
+            }
         }
+
+        //Init 범위 내에서 어쩌고
+        result.data = nearUserData
 
         result.success = true;
         res.send(result)
@@ -105,7 +132,7 @@ router.post("/refrigerator",auth.authCheck,async(req,res,next) =>{
     try{
         inputCheck(energy).isEmpty().isFinite()
         inputCheck(co2).isEmpty().isFinite()
-        inputCheck(modelname).isMinSize(4).isMaxSize(50).isEmpty()
+        inputCheck(modelname).isEmpty().isMinSize(4).isMaxSize(50)
 
         client = new Client(db.pgConnect)
         client.connect()

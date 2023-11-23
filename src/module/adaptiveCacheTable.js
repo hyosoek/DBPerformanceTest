@@ -28,9 +28,14 @@ const getInitArea = async(longitude,latitude) =>{
             areaTokenCount++;
         }
     }
-    areaTokenCount
-    console.log(areaTokenCount)
+    console.log(await percentageToLevel(((areaTokenCount / data.length) * 100).toFixed(1)))
+    return await percentageToLevel(((areaTokenCount / data.length) * 100).toFixed(1))
     //area 반환
+}
+
+const percentageToLevel = async(percentage) =>{// 나중에 테이블 만들기
+    const level = Math.floor(percentage/10)
+    return level
 }
 
 const getAreaToken = async(longitude,latitude) => {
@@ -74,4 +79,9 @@ const getAreaToken = async(longitude,latitude) => {
     return parseInt(areaToken)
 }
 
-module.exports = {setTable,getInitArea}
+const zoomLevelToRange = async(level) => {
+    
+}
+
+
+module.exports = {setTable,getInitArea,zoomLevelToRange}
