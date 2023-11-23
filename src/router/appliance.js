@@ -13,6 +13,7 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
     const result = {
         "success" : false,
         "data" : null,
+        "tier" : null,
         "message" : ""
     }
     let client = null;
@@ -32,7 +33,7 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
             throw err
         }
         await adaptiveCacheTable.setTable(row1[0].longitude,row1[0].latitude)
-        const initAreaLevel = await adaptiveCacheTable.getInitArea(row1[0].longitude,row1[0].latitude) // 캐싱테이블을 통해 얼마나 상세한 부분에서 시작할지 정함
+        let initAreaLevel = await adaptiveCacheTable.getInitArea(row1[0].longitude,row1[0].latitude) // 캐싱테이블을 통해 얼마나 상세한 부분에서 시작할지 정함
         
         //인천 = 레벨 2일 것
         //126.6496 
@@ -43,19 +44,19 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
         //38.1342
 
         let nearUserData = null
-
-        for(let i = 2;i >= 0; i--){//높은 숫자의 레벨을 가질 수록, 상대적으로 인구밀도가 높음을 의미합니다.
+        initAreaLevel /= 2
+        for(let i = initAreaLevel;i >= 0; i--){//높은 숫자의 레벨을 가질 수록, 상대적으로 인구밀도가 높음을 의미합니다.
             const longRange = parseFloat(process.env.koreanMaxLongitude)-parseFloat(process.env.koreanMinLongitude)
             const latRange = parseFloat(process.env.koreanMaxLatitude)-parseFloat(process.env.koreanMinLatitude)
             const divideFactor = Math.pow(2,i + parseInt(process.env.initZoomLevel))
             //const divideFactor = Math.pow(2,i + parseInt(process.env.initZoomLevel))
             
             //const zoomLevelToRange = adaptiveCacheTable.zoomLevelToRange(i)
-            const longMaxRange =  126.6496  + (longRange/divideFactor)/2
-            const longMinRange =  126.6496 - (longRange/divideFactor)/2
+            const longMaxRange =  row1[0].longitude + (longRange/divideFactor)/2
+            const longMinRange =  row1[0].longitude  - (longRange/divideFactor)/2
 
-            const latMaxRange = 37.4473 + (latRange/divideFactor)/2
-            const latMinRange =  37.4473 - (latRange/divideFactor)/2
+            const latMaxRange = row1[0].latitude + (latRange/divideFactor)/2
+            const latMinRange =  row1[0].latitude - (latRange/divideFactor)/2
 
             const sql2 = `SELECT *
                         FROM (
