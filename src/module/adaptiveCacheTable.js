@@ -24,6 +24,7 @@ const getInitArea = async(longitude,latitude) =>{
 
     let areaTokenCount = 0;
     for(let i = 0; i < data.length; i++){
+        //console.log(data[i])
         if(parseInt(data[i]) == parseInt(areaToken)){
             areaTokenCount++;
         }

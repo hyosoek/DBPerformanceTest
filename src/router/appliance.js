@@ -25,7 +25,7 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
         const sql1 = `SELECT longitude,latitude FROM account WHERE id = $1`
         const values1 = [req.decoded.id]
         const data1 = await client.query(sql1,values1)
-        const row1 = data1.rows
+        let row1 = data1.rows
         if(row1.length != 1){
             err = new Error()
             err.status = 403
@@ -33,31 +33,38 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
             throw err
         }
         await adaptiveCacheTable.setTable(row1[0].longitude,row1[0].latitude)
-        let initAreaLevel = await adaptiveCacheTable.getInitArea(row1[0].longitude,row1[0].latitude) // 캐싱테이블을 통해 얼마나 상세한 부분에서 시작할지 정함
-        
+        let initAreaLevel = await adaptiveCacheTable.getInitArea(row1[0].longitude,row1[0].latitude) // 캐싱테이블을 통해 얼마나 상세한 부분에서 시작할지 정        
+
         //인천 = 레벨 2일 것
-        //126.6496 
-        //37.4473
+        // row1[0].latitude = 126.6496 
+        // row1[0].latitude = 37.4473
 
         //강원도 = 레벨 0일 것
-        //128.3602
-        //38.1342
+        row1[0].longitude = 128.3602
+        row1[0].latitude = 38.1342
 
         let nearUserData = null
-        initAreaLevel /= 2
-        for(let i = initAreaLevel;i >= 0; i--){//높은 숫자의 레벨을 가질 수록, 상대적으로 인구밀도가 높음을 의미합니다.
-            const longRange = parseFloat(process.env.koreanMaxLongitude)-parseFloat(process.env.koreanMinLongitude)
-            const latRange = parseFloat(process.env.koreanMaxLatitude)-parseFloat(process.env.koreanMinLatitude)
-            const divideFactor = Math.pow(2,i + parseInt(process.env.initZoomLevel))
-            //const divideFactor = Math.pow(2,i + parseInt(process.env.initZoomLevel))
+        console.log(initAreaLevel)
+        initAreaLevel = 10
+        if(initAreaLevel > 5) initAreaLevel = 5 // 레벨의 최대값을 제한
+
+        const divideFactor = Math.pow(2, initAreaLevel+4) //값이 커질 수록 검색 범위가 줄어듦 = initAreaLevel값이 크게 세팅되면 검색 범위가 줄어듦
+        const longRange = parseFloat(process.env.koreanMaxLongitude)-parseFloat(process.env.koreanMinLongitude)
+        const latRange = parseFloat(process.env.koreanMaxLatitude)-parseFloat(process.env.koreanMinLatitude)
+
+        let initLongMaxRange = row1[0].longitude + (longRange/divideFactor)/2
+        let initLongMinRange = row1[0].longitude - (longRange/divideFactor)/2
+        let initLatMaxRange = row1[0].latitude + (latRange/divideFactor)/2
+        let initLatMinRange = row1[0].latitude - (latRange/divideFactor)/2
+
+
+        for(let i = 4;i >= 0; i--){ //무조건 최대 횟수는 5번으로 제한합니다. 왜냐? 난 시간을 1초 이상은 절대로 쓰지 않을 예정이니깐
+            const newDivideFactor = Math.pow(2,i)
+            const longMaxRange = initLongMaxRange + (parseFloat(process.env.koreanMaxLongitude)-initLongMaxRange)/newDivideFactor
+            const longMinRange = initLongMinRange - (parseFloat(process.env.koreanMinLongitude)-initLongMinRange)/newDivideFactor
+            const latMaxRange = initLatMaxRange + (parseFloat(process.env.koreanMaxLatitude)-initLatMaxRange)/newDivideFactor
+            const latMinRange = initLatMinRange - (parseFloat(process.env.koreanMinLatitude)-initLatMinRange)/newDivideFactor
             
-            //const zoomLevelToRange = adaptiveCacheTable.zoomLevelToRange(i)
-            const longMaxRange =  row1[0].longitude + (longRange/divideFactor)/2
-            const longMinRange =  row1[0].longitude  - (longRange/divideFactor)/2
-
-            const latMaxRange = row1[0].latitude + (latRange/divideFactor)/2
-            const latMinRange =  row1[0].latitude - (latRange/divideFactor)/2
-
             const sql2 = `SELECT *
                         FROM (
                             SELECT 
@@ -96,13 +103,14 @@ router.get("/refrigerator",auth.authCheck,async(req,res,next) =>{
                         row_number BETWEEN 0 AND 101
                     ORDER BY 
                         row_number;`
+
             console.log(i+"'s iter LongRange : ",longMinRange,"~",longMaxRange)
             console.log(i+"'s iter LatRange : ",latMinRange,"~",latMaxRange)
 
             const values2 = [req.decoded.id,longMaxRange,longMinRange,latMaxRange,latMinRange]
             const data2 = await client.query(sql2,values2)
             const row2 = data2.rows
-            console.log(row2.length)
+            console.log("total dataset : "+row2.length)
             nearUserData = row2.map((elem) => { return elem })
             if (row2.length >= 100){
                 break;
