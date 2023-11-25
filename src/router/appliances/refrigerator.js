@@ -13,7 +13,6 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
     const result = {
         "success" : false,
         "data" : null,
-        "tier" : null,
         "message" : ""
     }
     let client = null;
@@ -22,14 +21,23 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
         client = new Client(db.pgConnect)
         client.connect()
         //await client.query('BEGIN');
-        const sql1 = `SELECT longitude,latitude FROM account WHERE id = $1`
-        const values1 = [req.decoded.id]
+        const sql1 = `SELECT 
+                        a.longitude,a.latitude,b.energy,b.co2,b.model_name
+                    FROM
+                        account a 
+                    JOIN 
+                        refrigerator b 
+                    ON 
+                        a.id = b.account_id 
+                    WHERE 
+                        a.id = $1 AND b.id = $2`
+        const values1 = [req.decoded.id,id]
         const data1 = await client.query(sql1,values1)
         let row1 = data1.rows
         if(row1.length != 1){
             err = new Error()
             err.status = 403
-            err.message = "Invalid user Data!"
+            err.message = "Invalid data on account or refrigerator key!"
             throw err
         }
         await adaptiveCacheTable.setTable(row1[0].longitude,row1[0].latitude)
@@ -131,18 +139,15 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
             latMaxRange = initLatMaxRange + (parseFloat(process.env.koreanMaxLatitude)-initLatMaxRange)/newDivideFactor
             latMinRange = initLatMinRange - (initLatMinRange-parseFloat(process.env.koreanMinLatitude))/newDivideFactor
         }
-        
-        const sql3 = `SELECT energy,co2,model_name FROM refrigerator WHERE id = $1`
-        const values3 = [id]
-        const data3 = await client.query(sql3,values3)
-        let row3 = data3.rows
-        //Init 범위 내에서 어쩌고
+        console.log(nearUserData)
 
+        delete row1[0]["latitude"]
+        delete row1[0]["longitude"]
 
-        const relativeData = await relativeTier.getRelativeAscTier(nearUserData,row3[0].energy)
-        result.data = row3[0]
-        result.tier = relativeData.tier
-        result.relativePercent = relativeData.percentage
+        const relativeData = await relativeTier.getRelativeAscTier(nearUserData,row1[0].energy)
+        result.data = row1[0]
+        result.data.tier = relativeData.tier
+        result.data.relativePercent = relativeData.percentage
         result.success = true;
         res.send(result)
     }catch(err){
@@ -213,7 +218,7 @@ router.delete("/",auth.authCheck,async(req,res,next) =>{
         if(data.rowCount){ // 삭제된게 있는 경우
             result.success = true;
         }else{
-            result.message = "Not exist data!"
+            result.message = "Not exist data or permission!"
         }
         res.send(result)
     }catch(err){

@@ -13,7 +13,6 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
     const result = {
         "success" : false,
         "data" : null,
-        "tier" : null,
         "message" : ""
     }
     let client = null;
@@ -21,19 +20,27 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
         inputCheck(id).isEmpty()
         client = new Client(db.pgConnect)
         client.connect()
-        const sql1 = `SELECT longitude,latitude FROM account WHERE id = $1`
-        const values1 = [req.decoded.id]
+        const sql1 = `SELECT 
+                        a.longitude,a.latitude,b.energy,b.co2,b.model_name
+                    FROM
+                        account a 
+                    JOIN 
+                        air_conditioner b 
+                    ON 
+                        a.id = b.account_id 
+                    WHERE 
+                        a.id = $1 AND b.id = $2`
+        const values1 = [req.decoded.id,id]
         const data1 = await client.query(sql1,values1)
         let row1 = data1.rows
         if(row1.length != 1){
             err = new Error()
             err.status = 403
-            err.message = "Invalid user Data!"
+            err.message = "Invalid data on account or air_conditioner key!"
             throw err
         }
         await adaptiveCacheTable.setTable(row1[0].longitude,row1[0].latitude)
         let initAreaLevel = await adaptiveCacheTable.getInitArea(row1[0].longitude,row1[0].latitude) // 캐싱테이블을 통해 얼마나 상세한 부분에서 시작할지 정        
-
         let nearUserData = null
         if(initAreaLevel > 5) initAreaLevel = 10 // 레벨의 최대값을 제한
 
@@ -57,12 +64,7 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
             const sql2 = `SELECT energy as data
                         FROM (
                             SELECT 
-                                a.id AS user_id, 
-                                a.latitude, 
-                                a.longitude, 
-                                b.id AS air_conditioner_id,
-                                b.energy, 
-                                b.co2,
+                                b.energy,
                                 ROW_NUMBER()
                                 OVER (ORDER BY 
                                     ABS(a.latitude - (SELECT 
@@ -98,14 +100,9 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
                     ORDER BY 
                         energy;` //비교 기준은 에너지입니다.
 
-
-            // console.log(i+"'s iter LongRange : ",longMinRange,"~",longMaxRange)
-            // console.log(i+"'s iter LatRange : ",latMinRange,"~",latMaxRange)
-
             const values2 = [req.decoded.id,longMaxRange,longMinRange,latMaxRange,latMinRange]
             const data2 = await client.query(sql2,values2)
             const row2 = data2.rows
-            //console.log("total dataset count : "+row2.length)
             nearUserData = row2.map((elem) => { return elem })
             if (row2.length >= 100){
                 break;
@@ -116,22 +113,17 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
             latMinRange = initLatMinRange - (initLatMinRange-parseFloat(process.env.koreanMinLatitude))/newDivideFactor
         }
         
-        const sql3 = `SELECT energy,co2,model_name FROM air_conditioner WHERE id = $1`
-        const values3 = [id]
-        const data3 = await client.query(sql3,values3)
-        let row3 = data3.rows
-        //Init 범위 내에서 어쩌고
+        const relativeData = await relativeTier.getRelativeAscTier(nearUserData,row1[0].energy)
 
-
-        const relativeData = await relativeTier.getRelativeAscTier(nearUserData,row3[0].energy)
-        result.data = row3[0]
-        result.tier = relativeData.tier
-        result.relativePercent = relativeData.percentage
+        delete row1[0]["latitude"]
+        delete row1[0]["longitude"]
+        result.data = row1[0]
+        result.data.tier = relativeData.tier
+        result.data.relativePercent = relativeData.percentage
         result.success = true;
         res.send(result)
     }catch(err){
-        //await client.query('ROLLBACK')
-        console.log("GET /appliance/air_conditioner", err.message) // 이건 해주는게 맞음
+        console.log("GET /appliance/air_conditioner", err.message)
         next(err)
     } finally{
         if(client) client.end()
@@ -197,7 +189,7 @@ router.delete("/",auth.authCheck,async(req,res,next) =>{
         if(data.rowCount){ // 삭제된게 있는 경우
             result.success = true;
         }else{
-            result.message = "Not exist data!"
+            result.message = "Not exist data or permission"
         }
         res.send(result)
     }catch(err){

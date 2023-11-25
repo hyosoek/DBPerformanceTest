@@ -3,10 +3,10 @@ require('dotenv').config({ path: "../../.env" });
 
 module.exports = {
     getRelativeAscTier : async(dataset, data) =>{
-        data = 1
+        //data = 1
         let index = null;
         for(let i = 0; i < dataset.length;i++){
-            if(parseInt(dataset[i].data) >= parseInt(data)){
+            if(parseFloat(dataset[i].data) >= parseFloat(data)){
                 index = i
                 break
             }
@@ -42,9 +42,11 @@ module.exports = {
     },
 
     getRelativeDescTier : async(dataset, data) =>{
-        let index = null;
-        for(let i = dataset.length; i >= 0;i--){
-            if(parseInt(dataset[i].data) >= parseInt(data)){
+        let index = 0;
+        console.log(dataset.length)
+        console.log(data)
+        for(let i = 0; i < dataset.length;i++){
+            if(parseFloat(dataset[i].data) <= parseFloat(data)){
                 index = i
                 break
             }
