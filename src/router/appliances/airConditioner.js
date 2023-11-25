@@ -21,7 +21,6 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
         inputCheck(id).isEmpty()
         client = new Client(db.pgConnect)
         client.connect()
-        //await client.query('BEGIN');
         const sql1 = `SELECT longitude,latitude FROM account WHERE id = $1`
         const values1 = [req.decoded.id]
         const data1 = await client.query(sql1,values1)
@@ -35,22 +34,7 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
         await adaptiveCacheTable.setTable(row1[0].longitude,row1[0].latitude)
         let initAreaLevel = await adaptiveCacheTable.getInitArea(row1[0].longitude,row1[0].latitude) // 캐싱테이블을 통해 얼마나 상세한 부분에서 시작할지 정        
 
-        //console.log( row1[0].longitude, row1[0].latitude)
-        //인천 = 레벨 2일 것
-        // row1[0].longitude = 126.6521
-        // row1[0].latitude = 37.4497
-
-        //강원도 = 레벨 0일 것
-        // row1[0].longitude = 128.3602
-        // row1[0].latitude = 38.1342
-
-        //외딴 섬
-        // row1[0].longitude = 129.0313
-        // row1[0].latitude = 37.9925
-
         let nearUserData = null
-        //console.log(initAreaLevel)
-        // initAreaLevel = 0
         if(initAreaLevel > 5) initAreaLevel = 10 // 레벨의 최대값을 제한
 
         const divideFactor = Math.pow(2, initAreaLevel+3) //값이 커질 수록 검색 범위가 줄어듦 = initAreaLevel값이 크게 세팅되면 검색 범위가 줄어듦
@@ -76,7 +60,7 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
                                 a.id AS user_id, 
                                 a.latitude, 
                                 a.longitude, 
-                                b.id AS refrigerator_id,
+                                b.id AS air_conditioner_id,
                                 b.energy, 
                                 b.co2,
                                 ROW_NUMBER()
@@ -97,7 +81,7 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
                             FROM 
                                 account a                                                              
                             JOIN                                                                   
-                                refrigerator b 
+                                air_conditioner b 
                             ON 
                                 a.id = b.account_id   
                             WHERE
@@ -132,7 +116,7 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
             latMinRange = initLatMinRange - (initLatMinRange-parseFloat(process.env.koreanMinLatitude))/newDivideFactor
         }
         
-        const sql3 = `SELECT energy,co2,model_name FROM refrigerator WHERE id = $1`
+        const sql3 = `SELECT energy,co2,model_name FROM air_conditioner WHERE id = $1`
         const values3 = [id]
         const data3 = await client.query(sql3,values3)
         let row3 = data3.rows
@@ -147,7 +131,7 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
         res.send(result)
     }catch(err){
         //await client.query('ROLLBACK')
-        console.log("GET /appliance/refrigerator", err.message) // 이건 해주는게 맞음
+        console.log("GET /appliance/air_conditioner", err.message) // 이건 해주는게 맞음
         next(err)
     } finally{
         if(client) client.end()
@@ -169,7 +153,7 @@ router.post("/",auth.authCheck,async(req,res,next) =>{
         client = new Client(db.pgConnect)
         client.connect()
         const sql = `INSERT INTO 
-                        refrigerator (account_id,energy,co2,model_name) 
+                        air_conditioner (account_id,energy,co2,model_name) 
                     VALUES 
                         ($1,$2,$3,$4);` //여기서 duplicate 체크
         const values = [req.decoded.id,energy,co2,modelname]
@@ -184,7 +168,7 @@ router.post("/",auth.authCheck,async(req,res,next) =>{
         result.success = true;
         res.send(result)
     }catch(err){
-        console.log("POST /appliance/refrigerator", err.message) // 이건 해주는게 맞음
+        console.log("POST /appliance/air_conditioner", err.message) // 이건 해주는게 맞음
         next(err)
     } finally{
         if(client) client.end()
@@ -204,7 +188,7 @@ router.delete("/",auth.authCheck,async(req,res,next) =>{
         client = new Client(db.pgConnect)
         client.connect()
         const sql = `DELETE FROM 
-                        refrigerator 
+                        air_conditioner 
                     WHERE 
                         id=$1 AND account_id=$2` //여기서 duplicate 체크
         const values = [id,req.decoded.id]
@@ -217,7 +201,7 @@ router.delete("/",auth.authCheck,async(req,res,next) =>{
         }
         res.send(result)
     }catch(err){
-        console.log("DELETE /appliance/refrigerator", err.message) // 이건 해주는게 맞음
+        console.log("DELETE /appliance/air_conditioner", err.message) // 이건 해주는게 맞음
         next(err)
     } finally{
         if(client) client.end()
@@ -226,74 +210,3 @@ router.delete("/",auth.authCheck,async(req,res,next) =>{
 
 
 module.exports = router
-
-//test code
-// `SELECT energy,co2,row_number,refrigerator_id,distance,latitude_dt,longitude_dt
-//                         FROM (
-//                             SELECT 
-//                                 a.id AS user_id, 
-//                                 a.latitude, 
-//                                 a.longitude, 
-//                                 b.id AS refrigerator_id,
-//                                 b.energy, 
-//                                 b.co2,
-//                                 ROW_NUMBER()
-//                                 OVER (ORDER BY 
-//                                     ABS(a.latitude - (SELECT 
-//                                                             latitude 
-//                                                     FROM 
-//                                                         account 
-//                                                     WHERE 
-//                                                         id = $1))^2 +        
-//                                     ABS(a.longitude - (SELECT
-//                                                             longitude 
-//                                                     FROM 
-//                                                         account 
-//                                                     WHERE 
-//                                                         id = $1))^2) 
-//                                 AS row_number,
-//                                 (ABS(a.latitude - (SELECT 
-//                                     latitude 
-//                                 FROM 
-//                                     account 
-//                                 WHERE 
-//                                     id = $1))^2 +        
-//                                 ABS(a.longitude - (SELECT
-//                                                         longitude 
-//                                                 FROM 
-//                                                     account 
-//                                                 WHERE 
-//                                                     id = $1))^2) 
-//                                 AS distance,
-//                                 ABS(a.latitude - (SELECT 
-//                                                 latitude 
-//                                             FROM 
-//                                                 account 
-//                                             WHERE 
-//                                                 id = $1)) as latitude_dt,
-//                                 ABS(a.longitude - (SELECT 
-//                                                 longitude 
-//                                             FROM 
-//                                                 account 
-//                                             WHERE 
-//                                                 id = $1)) as longitude_dt
-
-//                             FROM 
-//                                 account a                                                              
-//                             JOIN                                                                   
-//                                 refrigerator b 
-//                             ON 
-//                                 a.id = b.account_id   
-//                             WHERE
-//                                     a.longitude < $2 
-//                                 AND
-//                                     a.longitude > $3
-//                                 AND
-//                                     a.latitude < $4
-//                                 AND
-//                                     a.latitude > $5     
-//                         ) AS subquery
-//                     WHERE
-//                         row_number BETWEEN 1 AND 101
-//                     ORDER BY 
-//                         energy;`

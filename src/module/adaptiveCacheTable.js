@@ -1,5 +1,3 @@
-const { log } = require("console");
-
 const redis = require("redis").createClient();
 require('dotenv').config({ path: "../../.env" });
 
@@ -29,7 +27,7 @@ const getInitArea = async(longitude,latitude) =>{
             areaTokenCount++;
         }
     }
-    console.log(await percentageToLevel(((areaTokenCount / data.length) * 100).toFixed(1)))
+    //console.log(await percentageToLevel(((areaTokenCount / data.length) * 100).toFixed(1)))
     return await percentageToLevel(((areaTokenCount / data.length) * 100).toFixed(1))
     //area 반환
 }
