@@ -139,7 +139,6 @@ router.get("/",auth.authCheck,async(req,res,next) =>{
             latMaxRange = initLatMaxRange + (parseFloat(process.env.koreanMaxLatitude)-initLatMaxRange)/newDivideFactor
             latMinRange = initLatMinRange - (initLatMinRange-parseFloat(process.env.koreanMinLatitude))/newDivideFactor
         }
-        console.log(nearUserData)
 
         delete row1[0]["latitude"]
         delete row1[0]["longitude"]

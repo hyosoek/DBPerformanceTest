@@ -20,35 +20,35 @@ class inputCheck {
     
     isNull = () => {
       if(this.input == null){
-        this.goError(this.input + "is Null input")
+        this.goError(this.input + " is Null input")
       }  
       return this;
     }
   
     isUndefined = () => {
       if(this.input == undefined){
-        this.goError(this.input + "is Undefined input")
+        this.goError(this.input + " is Undefined input")
       }  
       return this;
     }
 
     isMinSize = (size) =>{
         if(this.input.length < size){
-            this.goError( this.input + "is Too short input")
+            this.goError( this.input + " is Too short input")
         }  
         return this;
     }
 
     isMaxSize = (size) =>{
         if(this.input.length > size){
-            this.goError(this.input + "is Too Large input")
+            this.goError(this.input + " is Too Large input")
         }  
         return this;
     }
 
     isMail = () =>{
         if(regexPatterns.mail.test(this.input) == false){
-            this.goError(this.input + "is NOT Mail type")
+            this.goError(this.input + " is NOT Mail type")
         }  
         return this;
     }
@@ -56,42 +56,42 @@ class inputCheck {
     isContact = () =>{
         
         if(regexPatterns.contact.test(this.input) == false){
-            this.goError(this.input + "is NOT Contact type")
+            this.goError(this.input + " is NOT Contact type")
         }  
         return this;
     }
 
     isDate = () =>{
         if(regexPatterns.date.test(this.input) == false){
-            this.goError(this.input + "is NOT Date type input")
+            this.goError(this.input + " is NOT Date type input")
         }  
         return this;
     }
 
     isIP = () =>{
         if(regexPatterns.ip.test(this.input) == false){
-            this.goError(this.input + "is Not IP type input")
+            this.goError(this.input + " is Not IP type input")
         }  
         return this;
     }
     
     isEqual =(input2) =>{
         if(this.input != input2){
-            this.goError(this.input + "is NOT same input")
+            this.goError(this.input + " is NOT same input")
         }  
         return this;
     }
 
     isInt = () =>{
         if(!Number.isInteger(this.input)){
-            this.goError(this.input + "is NOT Int TYPE Input")
+            this.goError(this.input + " is NOT Int TYPE Input")
         }  
         return this;
     }
 
     isFinite = () =>{
         if(!Number.isFinite(this.input)){
-            this.goError(this.input + "is NOT Finite TYPE Input")
+            this.goError(this.input + " is NOT Finite TYPE Input")
         }  
         return this;
     }

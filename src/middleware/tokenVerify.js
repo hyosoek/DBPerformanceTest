@@ -25,7 +25,7 @@ const publishToken = async(userData) =>{ //갱신과, 생성을 동시에 하나
             "expiresIn" : process.env.tokenTime + "h"
         })
         return token
-    }catch(err){
+    }catch(err){4
         console.log(`publishToken Error : ${err.message}`)
     }
 }
