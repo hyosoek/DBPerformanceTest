@@ -146,6 +146,7 @@ router.get("/duplicate-nickname",async(req,res,next)=>{
 })
 
 router.post("/",async(req,res,next)=>{
+    console.log(req.body)
     //duplicate는 unique라서 자동으로 되는 듯, 인증코드만 받으면 되는데,
     const {mail,pw1,pw2,nickname,code,longitude,latitude} = req.body;
     const result = {

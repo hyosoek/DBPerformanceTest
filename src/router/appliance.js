@@ -7,6 +7,6 @@ router.use('/boiler', require('./appliances/boiler'));
 router.use('/dryer', require('./appliances/dryer'));
 router.use('/microwave', require('./appliances/microwave'));
 router.use('/television', require('./appliances/television'));
-router.use('/washingMachine', require('./appliances/washingMachine'));
+router.use('/washing-machine', require('./appliances/washingMachine'));
 
 module.exports = router;

@@ -1,8 +1,14 @@
+//clog test
+var bodyParser = require('body-parser')
+
+
+
 //environment setting
 const express =require("express")
 const path = require("path")
 const https = require("https")
-const fs = require("fs") 
+const fs = require("fs")
+const cookieParser = require('cookie-parser');
 
 const redis = require("redis").createClient();
 const errorHandler = require("./middleware/errorhandling.js")
@@ -21,9 +27,18 @@ const sslOptions = {
 const server = https.createServer(sslOptions,app)
 
 app.use(morgan(morganFormat, { stream: logger.stream })); // morgan 로그 설정 
+app.use(express.urlencoded( {extended : true } ));
 app.use(express.json()) // 타입 변환(req에 대한 body-parser)
 app.use(express.static('../'));
+app.use(cookieParser());
 
+const cors = require("cors");
+app.use(cors({
+    origin: 'http://localhost:3000',
+    credentials: true
+  }));
+
+//clog 테스트용
 app.get("*",(req,res,next) =>{
     const protocol = req.protocol 
     if(protocol == "https"){
@@ -38,6 +53,10 @@ app.get("*",(req,res,next) =>{
 app.use("/account", require("./router/account"))
 app.use("/main", require("./router/main"))
 app.use("/appliance", require("./router/appliance"))
+app.use("/nodam", require("./router/Nodam"))
+app.use("/auth", require("./router/Clog"))
+app.use("/auth", require("./router/Clog2"))
+
 // const postApi = require("./router/appliance")
 // app.use("/appliance",postApi) 
 // const commentApi = require("./router/recommend")
