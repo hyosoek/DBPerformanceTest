@@ -149,6 +149,7 @@ node_modules
 
 #pem
 .pem
-ssl/.pem
+
+ssl/
 
 # End of https://www.toptal.com/developers/gitignore/api/node
