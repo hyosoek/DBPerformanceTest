@@ -3,11 +3,11 @@
 require('dotenv').config({ path: "../.env" });
 
 const pgConnect = {
-    user : process.env.dbUser,
-    host : process.env.dbHost,
-    database : process.env.dbDatabase,
-    password : process.env.dbPassword,
-    port : process.env.dbPort
+    user : process.env.DBUSER,
+    host : process.env.DBHOST,
+    database : process.env.DBDATABASE,
+    password : process.env.DBPASSWORD,
+    port : process.env.DBPORT
 }
 
 

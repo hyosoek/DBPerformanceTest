@@ -41,8 +41,10 @@ app.get("*",(req,res,next) =>{
 })
 
 //API
-app.use("/account", require("./router/postgresql"))
-app.use("/account", require("./router/mariadb"))
+// app.use("/postgre", require("./router/postgresql"))
+// app.use("/account", require("./router/mariadb"))
+const postgreTestObject = new (require('./testing/ptest'))('John');
+
 
 app.use(function (err, req, res, next) {
     errorHandler.errorPass(err,req,res)
