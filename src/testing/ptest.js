@@ -11,35 +11,101 @@ class postgreTestClass {
     }
 
     mainFunction = async(sql,count) => {
-        console.log("Pk - B-tree")
-        const sql0 = `EXPLAIN ANALYZE 
-                        SELECT 
-                            *
-                        FROM 
-                            account 
-                        WHERE 
-                            id=5000000;`
-        await this.showAverageSelectLatency(sql0,20)
+        // console.log("Pk - B-tree")
+        // const sql0 = `EXPLAIN ANALYZE 
+        //                 SELECT 
+        //                     *
+        //                 FROM 
+        //                     account 
+        //                 WHERE 
+        //                     id=5000000;`
+        // await this.showAverageSelectLatency(sql0,20)
 
-        console.log("Hash idx")
-        const sql1 = `EXPLAIN ANALYZE 
-                        SELECT 
-                            *
-                        FROM 
-                            account 
-                        WHERE 
-                            mail = 'tennfin1@gmail.com1';`
-        await this.showAverageSelectLatency(sql1,20)
+        // console.log("Hash idx")
+        // const sql1 = `EXPLAIN ANALYZE 
+        //                 SELECT 
+        //                     *
+        //                 FROM 
+        //                     account 
+        //                 WHERE 
+        //                     mail = 'tennfin1@gmail.com1';`
+        // await this.showAverageSelectLatency(sql1,20)
     
-        console.log("Non idx")
-        const sql2 = `EXPLAIN ANALYZE 
-                        SELECT 
-                            *
-                        FROM 
-                            account
-                        WHERE
-                            longitude=-48.35523039348061;`
-        await this.showAverageSelectLatency(sql2,20)
+        // console.log("B-tree idx on Duplication")
+        // const sql2 = `EXPLAIN ANALYZE 
+        //                 SELECT 
+        //                     *
+        //                 FROM 
+        //                     account
+        //                 WHERE
+        //                     longitude=-48.35523039348061;`
+        // await this.showAverageSelectLatency(sql2,20)
+
+        // console.log("Hash idx on Duplication")
+        // const sql2 = `EXPLAIN ANALYZE 
+        //                 SELECT 
+        //                     *
+        //                 FROM 
+        //                     account
+        //                 WHERE
+        //                     longitude=-48.35523039348061;`
+        // await this.showAverageSelectLatency(sql2,20)
+
+        // console.log("B-tree idx on Duplication , Range Search")
+        // const sql3 = `EXPLAIN ANALYZE 
+        //                 SELECT 
+        //                     count(*)
+        //                 FROM 
+        //                     account
+        //                 WHERE
+        //                     longitude > 150;`
+        // await this.showAverageSelectLatency(sql3,20)
+
+        // console.log("")
+        // const sql3 = `EXPLAIN ANALYZE 
+        //                 SELECT 
+        //                     count(*)
+        //                 FROM 
+        //                     account
+        //                 WHERE
+        //                     longitude > 150;`
+        // await this.showAverageSelectLatency(sql3,20)
+
+        // console.log("H")
+        // const sql4 = `EXPLAIN ANALYZE 
+        //                 SELECT 
+        //                     longitude, 
+        //                     COUNT(*) 
+        //                 FROM 
+        //                     account 
+        //                 GROUP BY 
+        //                     longitude 
+        //                 HAVING 
+        //                     COUNT(*) > 1;`
+        // await this.showAverageSelectLatency(sql4,20)
+
+        // console.log("Nearst distance Search")
+        // const sql5 = `EXPLAIN ANALYZE 
+        //                 SELECT 
+        //                     *,
+        //                     ((latitude - 11.994151854243498 )^2 +        
+        //                     (longitude + 48.35523039348061)^2) AS distance_squared
+        //                 FROM 
+        //                     account
+        //                 ORDER BY 
+        //                     distance_squared
+        //                 LIMIT 
+        //                     10;`
+        // await this.showAverageSelectLatency(sql5,20)
+
+        console.log("Nearst distance Search with PostGIS")
+        const sql6 = `EXPLAIN ANALYZE 
+                        SELECT * 
+                        FROM account 
+                        ORDER BY location::geometry <-> 'SRID=4326;POINT(-48.35523039348061 11.994151854243498)'::geometry 
+                        LIMIT 10;`
+        await this.showAverageSelectLatency(sql6,20)
+
     }
 
     showAverageSelectLatency = async(sql,count) => {
